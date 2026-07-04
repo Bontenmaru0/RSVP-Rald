@@ -7,9 +7,6 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
     return Scaffold(
       backgroundColor: Colors.black,
       extendBodyBehindAppBar: true,
@@ -17,26 +14,10 @@ class HomePage extends StatelessWidget {
         color: Colors.black,
         child: Stack(
           fit: StackFit.expand,
-          children: [
-            const Positioned.fill(
-              child: _WeddingBackground(),
-            ),
-            const Positioned.fill(
-              child: _WeddingOverlay(),
-            ),
-            SafeArea(
-              left: false,
-              right: false,
-              top: false,
-              bottom: true,
-              child: Align(
-                alignment: Alignment.bottomCenter,
-                child: _WeddingContent(
-                  colorScheme: colorScheme,
-                  textTheme: textTheme,
-                ),
-              ),
-            ),
+          children: const [
+            Positioned.fill(child: _WeddingBackground()),
+            Positioned.fill(child: _WeddingOverlay()),
+            Positioned.fill(child: _WeddingNavigationRail()),
           ],
         ),
       ),
@@ -91,9 +72,9 @@ class _WeddingOverlay extends StatelessWidget {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Colors.black.withValues(alpha: 0.20),
+            Colors.black.withValues(alpha: 0.18),
             Colors.black.withValues(alpha: 0.08),
-            Colors.black.withValues(alpha: 0.32),
+            Colors.black.withValues(alpha: 0.30),
           ],
         ),
       ),
@@ -101,23 +82,132 @@ class _WeddingOverlay extends StatelessWidget {
   }
 }
 
-class _WeddingContent extends StatelessWidget {
-  const _WeddingContent({
-    required this.colorScheme,
-    required this.textTheme,
-  });
-
-  final ColorScheme colorScheme;
-  final TextTheme textTheme;
+class _WeddingNavigationRail extends StatelessWidget {
+  const _WeddingNavigationRail();
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 480),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+    final colorScheme = Theme.of(context).colorScheme;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isMobile = screenWidth < 700;
+
+    return SafeArea(
+      child: Align(
+        alignment: Alignment.bottomRight,
+        child: Padding(
+          padding: EdgeInsets.only(
+            right: isMobile ? 12 : 24,
+            bottom: 24,
+          ),
+          child: _GlassRail(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _RailIconButton(
+                  icon: Icons.church,
+                  label: 'Church',
+                  colorScheme: colorScheme,
+                  onPressed: () {},
+                ),
+                const SizedBox(height: 14),
+                _RailIconButton(
+                  icon: Icons.wine_bar,
+                  label: 'Reception',
+                  colorScheme: colorScheme,
+                  onPressed: () {},
+                ),
+                const SizedBox(height: 14),
+                _RailIconButton(
+                  icon: Icons.message,
+                  label: 'RSVP',
+                  colorScheme: colorScheme,
+                  onPressed: () {},
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GlassRail extends StatelessWidget {
+  const _GlassRail({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(28),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.18),
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.12),
+            ),
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+class _RailIconButton extends StatelessWidget {
+  const _RailIconButton({
+    required this.icon,
+    required this.label,
+    required this.colorScheme,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String label;
+  final ColorScheme colorScheme;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: label,
+      child: Material(
+        color: Colors.transparent,
+        shape: const CircleBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onPressed,
+          customBorder: const CircleBorder(),
+          splashFactory: InkRipple.splashFactory,
+          child: Ink(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: colorScheme.primary.withValues(alpha: 0.18),
+              border: Border.all(
+                color: colorScheme.primary.withValues(alpha: 0.55),
+                width: 1.2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.22),
+                  blurRadius: 14,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Icon(
+              icon,
+              size: 26,
+              color: colorScheme.primary,
+            ),
+          ),
         ),
       ),
     );
