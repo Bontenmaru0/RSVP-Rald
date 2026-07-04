@@ -337,6 +337,11 @@ class _GalleryViewerState extends State<_GalleryViewer> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
+    final mediaSize = MediaQuery.sizeOf(context);
+    final isCompact = mediaSize.height < 700 || mediaSize.width < 380;
+    final rootPadding = EdgeInsets.all(isCompact ? 16 : 20);
+    final topGap = isCompact ? 10.0 : 14.0;
+    final betweenImageAndStrip = isCompact ? 10.0 : 14.0;
 
     return Material(
       color: Colors.transparent,
@@ -364,16 +369,19 @@ class _GalleryViewerState extends State<_GalleryViewer> {
           ),
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: rootPadding,
               child: Column(
                 children: [
                   Row(
                     children: [
-                      Text(
-                        widget.celebrantTitle,
-                        style: widget.titleStyle,
+                      Expanded(
+                        child: Text(
+                          widget.celebrantTitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: widget.titleStyle,
+                        ),
                       ),
-                      const Spacer(),
                       IconButton(
                         onPressed: () => Navigator.of(context).pop(),
                         icon: const Icon(Icons.close),
@@ -381,7 +389,7 @@ class _GalleryViewerState extends State<_GalleryViewer> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 14),
+                  SizedBox(height: topGap),
                   Expanded(
                     child: Column(
                       children: [
@@ -412,7 +420,9 @@ class _GalleryViewerState extends State<_GalleryViewer> {
                                         },
                                         itemBuilder: (context, index) {
                                           return Padding(
-                                            padding: const EdgeInsets.all(16),
+                                            padding: EdgeInsets.all(
+                                              isCompact ? 10 : 12,
+                                            ),
                                             child: _ZoomableGalleryImage(
                                               imagePath: widget.images[index],
                                             ),
@@ -434,7 +444,7 @@ class _GalleryViewerState extends State<_GalleryViewer> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 14),
+                        SizedBox(height: betweenImageAndStrip),
                         _GalleryPreviewStrip(
                           images: widget.images,
                           currentIndex: _currentIndex,
@@ -449,14 +459,16 @@ class _GalleryViewerState extends State<_GalleryViewer> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Swipe left or right to browse, pinch to zoom, and the counter keeps your place.',
-                    textAlign: TextAlign.center,
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: Colors.white.withValues(alpha: 0.84),
+                  if (!isCompact) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'Swipe left or right to browse, pinch to zoom, and the counter keeps your place.',
+                      textAlign: TextAlign.center,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: Colors.white.withValues(alpha: 0.84),
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
@@ -565,11 +577,12 @@ class _GalleryPreviewStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 90,
+      height: 104,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: images.length,
-        padding: const EdgeInsets.symmetric(horizontal: 6),
+        clipBehavior: Clip.none,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         separatorBuilder: (context, index) => const SizedBox(width: 10),
         itemBuilder: (context, index) {
           final isActive = index == currentIndex;
@@ -578,7 +591,9 @@ class _GalleryPreviewStrip extends StatelessWidget {
             onTap: () => onTapPreview(index),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
-              width: 66,
+              margin: const EdgeInsets.symmetric(vertical: 2),
+              width: 68,
+              height: 88,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
@@ -595,23 +610,28 @@ class _GalleryPreviewStrip extends StatelessWidget {
                   ),
                 ],
               ),
-              clipBehavior: Clip.antiAlias,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.asset(
-                    images[index],
-                    fit: BoxFit.cover,
-                    filterQuality: FilterQuality.low,
+              child: Padding(
+                padding: const EdgeInsets.all(2),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(13),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.asset(
+                        images[index],
+                        fit: BoxFit.cover,
+                        filterQuality: FilterQuality.low,
+                      ),
+                      if (isActive)
+                        Container(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withValues(alpha: 0.12),
+                        ),
+                    ],
                   ),
-                  if (isActive)
-                    Container(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withValues(alpha: 0.12),
-                    ),
-                ],
+                ),
               ),
             ),
           );
