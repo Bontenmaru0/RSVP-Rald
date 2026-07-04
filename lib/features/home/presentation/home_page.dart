@@ -2,6 +2,32 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+void _openGalleryModal(BuildContext context) {
+  showGeneralDialog(
+    context: context,
+    barrierDismissible: true,
+    barrierLabel: 'Gallery',
+    barrierColor: Colors.black.withValues(alpha: 0.32),
+    transitionDuration: const Duration(milliseconds: 220),
+    pageBuilder: (dialogContext, animation, secondaryAnimation) {
+      return const _GalleryModal();
+    },
+    transitionBuilder: (context, animation, secondaryAnimation, child) {
+      final curved = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutCubic,
+      );
+      return FadeTransition(
+        opacity: curved,
+        child: ScaleTransition(
+          scale: Tween<double>(begin: 0.98, end: 1.0).animate(curved),
+          child: child,
+        ),
+      );
+    },
+  );
+}
+
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
@@ -12,13 +38,24 @@ class HomePage extends StatelessWidget {
       extendBodyBehindAppBar: true,
       body: ColoredBox(
         color: Colors.black,
-        child: Stack(
-          fit: StackFit.expand,
-          children: const [
-            Positioned.fill(child: _WeddingBackground()),
-            Positioned.fill(child: _WeddingOverlay()),
-            Positioned.fill(child: _WeddingNavigationRail()),
-          ],
+        child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onHorizontalDragEnd: (details) {
+            if (details.primaryVelocity != null &&
+                details.primaryVelocity!.abs() > 120 &&
+                details.primaryVelocity! > 0) {
+              _openGalleryModal(context);
+            }
+          },
+          child: Stack(
+            fit: StackFit.expand,
+            children: const [
+              Positioned.fill(child: _WeddingBackground()),
+              Positioned.fill(child: _WeddingOverlay()),
+              Positioned.fill(child: _GalleryTab()),
+              Positioned.fill(child: _WeddingNavigationRail()),
+            ],
+          ),
         ),
       ),
     );
@@ -127,6 +164,202 @@ class _WeddingNavigationRail extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _GalleryTab extends StatefulWidget {
+  const _GalleryTab();
+
+  @override
+  State<_GalleryTab> createState() => _GalleryTabState();
+}
+
+class _GalleryTabState extends State<_GalleryTab> {
+  static const double _tabWidth = 54;
+  static const double _tabHeight = 120;
+
+  void _handleDragEnd(DragEndDetails details) {
+    final velocity = details.velocity.pixelsPerSecond.dx;
+    if (velocity > 120) {
+      _openGalleryModal(context);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return SafeArea(
+      child: Align(
+        alignment: Alignment.topLeft,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => _openGalleryModal(context),
+          onHorizontalDragEnd: _handleDragEnd,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 20),
+            child: ClipRRect(
+              borderRadius: const BorderRadius.horizontal(
+                right: Radius.circular(22),
+              ),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                child: Container(
+                  width: _tabWidth,
+                  height: _tabHeight,
+                  decoration: BoxDecoration(
+                    borderRadius: const BorderRadius.horizontal(
+                      right: Radius.circular(22),
+                    ),
+                    color: Colors.black.withValues(alpha: 0.20),
+                    border: Border.all(
+                      color: colorScheme.primary.withValues(alpha: 0.45),
+                      width: 1.1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.26),
+                        blurRadius: 14,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.photo_library_outlined,
+                        size: 20,
+                        color: colorScheme.primary,
+                      ),
+                      const SizedBox(height: 10),
+                      RotatedBox(
+                        quarterTurns: 3,
+                        child: Text(
+                          'Gallery',
+                          style: textTheme.labelLarge?.copyWith(
+                            color: Colors.white,
+                            letterSpacing: 1.1,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GalleryModal extends StatelessWidget {
+  const _GalleryModal();
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Material(
+      color: Colors.transparent,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            'lib/assets/wedding-imgs/default-app-bg.png',
+            fit: BoxFit.cover,
+            filterQuality: FilterQuality.low,
+          ),
+          ImageFiltered(
+            imageFilter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+            child: Image.asset(
+              'lib/assets/wedding-imgs/default-app-bg.png',
+              fit: BoxFit.cover,
+              filterQuality: FilterQuality.low,
+            ),
+          ),
+          Container(
+            color: Colors.black.withValues(alpha: 0.48),
+          ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'Gallery',
+                        style: textTheme.headlineSmall?.copyWith(
+                          color: colorScheme.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close),
+                        color: Colors.white,
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 640),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(28),
+                          border: Border.all(
+                            color: colorScheme.primary.withValues(alpha: 0.34),
+                          ),
+                          color: Colors.black.withValues(alpha: 0.22),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.auto_awesome,
+                              size: 54,
+                              color: colorScheme.primary,
+                            ),
+                            const SizedBox(height: 18),
+                            Text(
+                              'Gallery coming soon',
+                              textAlign: TextAlign.center,
+                              style: textTheme.titleLarge?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'This is a full-screen modal for wedding photos, highlights, and swipe content later.',
+                              textAlign: TextAlign.center,
+                              style: textTheme.bodyMedium?.copyWith(
+                                color: Colors.white.withValues(alpha: 0.88),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 
 import 'features/home/presentation/home_page.dart';
@@ -12,6 +14,15 @@ class WeddingRsvpApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Gerald and Mervielynn RSVP',
       theme: AppTheme.light(),
+      scrollBehavior: const MaterialScrollBehavior().copyWith(
+        dragDevices: {
+          PointerDeviceKind.touch,
+          PointerDeviceKind.mouse,
+          PointerDeviceKind.stylus,
+          PointerDeviceKind.invertedStylus,
+          PointerDeviceKind.unknown,
+        },
+      ),
       home: const HomePage(),
     );
   }

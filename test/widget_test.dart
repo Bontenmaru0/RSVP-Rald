@@ -8,7 +8,7 @@
 //   ) async {
 //     await tester.pumpWidget(const WeddingRsvpApp());
 
-//     expect(find.text('Gerald & Mervielynn'), findsOneWidget);
-//     expect(find.text('Wedding RSVP'), findsOneWidget);
+//     expect(find.text('Gallery'), findsOneWidget);
+//     expect(find.text('Gerald and Mervielynn RSVP'), findsNothing);
 //   });
 // }
