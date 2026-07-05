@@ -84,6 +84,16 @@ const _churchLocationDetails = _LocationDetails(
   mobileNumber: '09178829887',
 );
 
+const _receptionLocationDetails = _LocationDetails(
+  title: 'Reception Location',
+  subtitle: "Casa Corazon",
+  qrAssetPath: 'lib/assets/wedding-imgs/CazaCorazon.png',
+  mapUrl:
+      'https://www.google.com/maps/place/Casa+Corazon/@14.866411,120.8274899,17z/data=!3m1!4b1!4m6!3m5!1s0x339653fec2be21bd:0x3025d5ac1a03b3c0!8m2!3d14.866411!4d120.8274899!16s%2Fg%2F11trfhhrg7?entry=ttu&g_ep=EgoyMDI2MDYyOS4wIKXMDSoASAFQAw%3D%3D',
+  address: 'VR8G+HX9, Malolos, Bulacan',
+  mobileNumber: '09550156322',
+);
+
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
@@ -210,7 +220,10 @@ class _WeddingNavigationRail extends StatelessWidget {
                   icon: Icons.wine_bar,
                   label: 'Reception Location',
                   colorScheme: colorScheme,
-                  onPressed: () {},
+                  onPressed: () => _openLocationModal(
+                    context,
+                    details: _receptionLocationDetails,
+                  ),
                 ),
                 const SizedBox(height: 14),
                 _RailIconButton(
