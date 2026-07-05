@@ -5,7 +5,7 @@ CREATE TABLE invitation_passcodes (
     guests INTEGER,
     datetime_sent TIMESTAMPTZ NOT NULL,
     confirmation_status VARCHAR(20) NOT NULL DEFAULT 'ForConfirmation',
-
     CONSTRAINT chk_confirmation_status
-        CHECK (confirmation_status IN ('ForConfirmation', 'Confirmed'))
+        CHECK (confirmation_status IN ('ForConfirmation', 'Confirmed', 'Declined'))
+        --added admin
 );

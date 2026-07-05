@@ -5,6 +5,7 @@ class RsvpSubmission {
     required this.guestCount,
     required this.isAttending,
     this.submittedAtIso8601 = '',
+    this.confirmationStatus = '',
   });
 
   final String passcode;
@@ -12,4 +13,5 @@ class RsvpSubmission {
   final int guestCount;
   final bool isAttending;
   final String submittedAtIso8601;
+  final String confirmationStatus;
 }

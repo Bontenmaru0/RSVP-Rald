@@ -9,10 +9,12 @@ class RsvpSupabaseRemoteDataSource implements RsvpRemoteDataSource {
   RsvpSupabaseRemoteDataSource({
     this.tableName = 'invitation_passcodes',
     this.rpcName = 'insert_invitation_passcode',
+    this.statusRpcName = 'get_invitation_by_passcode',
   });
 
   final String tableName;
   final String rpcName;
+  final String statusRpcName;
 
   Future<SupabaseClient> _client() async {
     final initialized = await RsvpSupabaseBootstrap.ensureInitialized();
@@ -27,11 +29,39 @@ class RsvpSupabaseRemoteDataSource implements RsvpRemoteDataSource {
   Future<List<RsvpSubmission>> fetchResponses() async {
     final client = await _client();
     final response = await client.from(tableName).select();
-    
+
     return response
         .whereType<Map<String, dynamic>>()
         .map(_toSubmission)
         .toList(growable: false);
+  }
+
+  @override
+  Future<RsvpSubmission> fetchResponseByPasscode(String passcode) async {
+    final client = await _client();
+    try {
+      final response = await client.rpc(
+        statusRpcName,
+        params: <String, dynamic>{
+          'p_passcode': passcode,
+        },
+      );
+
+      if (response is Map<String, dynamic>) {
+        return _toSubmission(response);
+      }
+
+      if (response is List && response.isNotEmpty) {
+        final first = response.first;
+        if (first is Map<String, dynamic>) {
+          return _toSubmission(first);
+        }
+      }
+
+      throw const InvalidRemoteResponseException();
+    } on PostgrestException catch (error) {
+      throw AppException(error.message);
+    }
   }
 
   @override
@@ -65,6 +95,8 @@ class RsvpSupabaseRemoteDataSource implements RsvpRemoteDataSource {
           ? row['guests'] as int
           : int.tryParse(row['guests']?.toString() ?? '') ?? 0,
       isAttending: row['confirmation_status']?.toString() == 'Confirmed',
+      confirmationStatus: row['confirmation_status']?.toString() ?? '',
+      submittedAtIso8601: row['datetime_sent']?.toString() ?? '',
     );
   }
 }

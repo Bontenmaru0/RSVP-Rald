@@ -7,6 +7,7 @@ import '../../../core/errors/app_exceptions.dart';
 import '../../../core/utils/app_snackbar.dart';
 import '../data/rsvp_repository_factory.dart';
 import '../domain/entities/rsvp_submission.dart';
+import 'rsvp_status_modal.dart';
 
 Future<void> showRsvpFormModal(BuildContext context) {
   return showGeneralDialog(
@@ -133,7 +134,7 @@ class _RsvpFormModalState extends State<RsvpFormModal> {
     final displayName = respondentName.isEmpty ? 'there' : respondentName;
     return 'Hi, $displayName!\n\n'
         'We received your response and will review it as we prepare the guest list for Gerald and Mervielynn\'s wedding.\n\n'
-        'You can check the status of your response anytime by tapping the message icon and entering your passcode.\n\n'
+        'You can check the church and reception locations using the location buttons, and return to the message icon anytime to review your invitation status with your passcode.\n\n'
         'Thank you for your patience and understanding.';
   }
 
@@ -776,6 +777,35 @@ class _RsvpFormModalState extends State<RsvpFormModal> {
                                       _isSubmitting
                                           ? 'Sending...'
                                           : 'Send Your Invitation Response',
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: OutlinedButton.icon(
+                                      onPressed: _isSubmitting
+                                          ? null
+                                          : () => showInvitationStatusModal(
+                                                widget.hostContext,
+                                              ),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: colorScheme.onSurface,
+                                        side: BorderSide(
+                                          color: colorScheme.primary.withValues(alpha: 0.28),
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 20,
+                                          vertical: 16,
+                                        ),
+                                        textStyle: textTheme.titleMedium?.copyWith(
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      icon: Icon(
+                                        Icons.search_rounded,
+                                        color: colorScheme.primary,
+                                      ),
+                                      label: const Text('Check Invitation Status'),
                                     ),
                                   ),
                                   ],

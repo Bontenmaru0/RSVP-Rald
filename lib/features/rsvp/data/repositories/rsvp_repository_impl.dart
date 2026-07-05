@@ -14,6 +14,11 @@ class RsvpRepositoryImpl implements RsvpRepository {
   }
 
   @override
+  Future<RsvpSubmission> fetchResponseByPasscode(String passcode) {
+    return safeRemoteCall(() => _remoteDataSource.fetchResponseByPasscode(passcode));
+  }
+
+  @override
   Future<void> submitResponse(RsvpSubmission submission) {
     return safeRemoteCall(() => _remoteDataSource.submitResponse(submission));
   }

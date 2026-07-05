@@ -1,3 +1,4 @@
+// Insert guest record
 CREATE OR REPLACE FUNCTION insert_invitation_passcode(
     p_passcode VARCHAR(6),
     p_name VARCHAR(50) DEFAULT NULL,
@@ -42,4 +43,57 @@ BEGIN
 
     RETURN v_row;
 END;
+$$;
+
+------------------------------------------------------------------------------------
+
+//Get guests info by Passcode
+
+CREATE OR REPLACE FUNCTION get_invitation_by_passcode(
+    p_passcode VARCHAR(6)
+)
+RETURNS invitation_passcodes
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_row invitation_passcodes;
+BEGIN
+    -- Validate passcode
+    IF p_passcode IS NULL OR trim(p_passcode) = '' THEN
+        RAISE EXCEPTION 'Passcode cannot be null or empty.';
+    END IF;
+
+    IF char_length(trim(p_passcode)) <> 6 THEN
+        RAISE EXCEPTION 'Passcode must be exactly 6 characters.';
+    END IF;
+
+    -- Get invitation
+    SELECT *
+    INTO v_row
+    FROM invitation_passcodes
+    WHERE passcode = trim(p_passcode);
+
+    -- Not found
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Invalid passcode.';
+    END IF;
+
+    RETURN v_row;
+END;
+$$;
+
+------------------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION is_admin_passcode(
+    p_passcode VARCHAR(6)
+)
+RETURNS BOOLEAN
+LANGUAGE sql
+AS $$
+    SELECT EXISTS (
+        SELECT 1
+        FROM invitation_passcodes
+        WHERE passcode = trim(p_passcode)
+          AND admin = TRUE
+    );
 $$;
