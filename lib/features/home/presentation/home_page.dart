@@ -216,9 +216,19 @@ class _GalleryTabState extends State<_GalleryTab> {
                       right: Radius.circular(22),
                     ),
                     color: Colors.black.withValues(alpha: 0.20),
-                    border: Border.all(
-                      color: colorScheme.primary.withValues(alpha: 0.45),
-                      width: 1.1,
+                    border: Border(
+                      top: BorderSide(
+                        color: colorScheme.primary.withValues(alpha: 0.45),
+                        width: 1.1,
+                      ),
+                      right: BorderSide(
+                        color: colorScheme.primary.withValues(alpha: 0.45),
+                        width: 1.1,
+                      ),
+                      bottom: BorderSide(
+                        color: colorScheme.primary.withValues(alpha: 0.45),
+                        width: 1.1,
+                      ),
                     ),
                     boxShadow: [
                       BoxShadow(
