@@ -22,6 +22,11 @@ class RemoteServiceUnavailableException extends AppException {
       : super('The remote service is unavailable right now.');
 }
 
+class DuplicatePasscodeException extends AppException {
+  const DuplicatePasscodeException()
+      : super('Passcode already exists. Please enter a different unique passcode.');
+}
+
 class InvalidRemoteResponseException extends AppException {
   const InvalidRemoteResponseException()
       : super('The remote service returned an invalid response.');

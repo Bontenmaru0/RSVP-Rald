@@ -4,18 +4,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/errors/app_exceptions.dart';
+import '../../../core/utils/app_snackbar.dart';
 import '../data/rsvp_repository_factory.dart';
 import '../domain/entities/rsvp_submission.dart';
 
 Future<void> showRsvpFormModal(BuildContext context) {
   return showGeneralDialog(
     context: context,
-    barrierDismissible: true,
+    barrierDismissible: false,
     barrierLabel: 'RSVP Response',
     barrierColor: Colors.black.withValues(alpha: 0.34),
     transitionDuration: const Duration(milliseconds: 320),
     pageBuilder: (dialogContext, animation, secondaryAnimation) {
-      return const RsvpFormModal();
+      return RsvpFormModal(hostContext: context);
     },
     transitionBuilder: (context, animation, secondaryAnimation, child) {
       final curved = CurvedAnimation(
@@ -41,7 +42,9 @@ Future<void> showRsvpFormModal(BuildContext context) {
 }
 
 class RsvpFormModal extends StatefulWidget {
-  const RsvpFormModal({super.key});
+  const RsvpFormModal({super.key, required this.hostContext});
+
+  final BuildContext hostContext;
 
   @override
   State<RsvpFormModal> createState() => _RsvpFormModalState();
@@ -55,7 +58,7 @@ class _RsvpFormModalState extends State<RsvpFormModal> {
   String? _passcodeError;
   String? _confirmPasscodeError;
   String? _nameError;
-  int _guestCount = 5;
+  int _guestCount = 1;
   bool _showPasscode = false;
   bool _showConfirmPasscode = false;
   bool _isSubmitting = false;
@@ -66,6 +69,72 @@ class _RsvpFormModalState extends State<RsvpFormModal> {
     _confirmPasscodeController.dispose();
     _nameController.dispose();
     super.dispose();
+  }
+
+  void _resetForm() {
+    setState(() {
+      _passcodeController.clear();
+      _confirmPasscodeController.clear();
+      _nameController.clear();
+      _passcodeError = null;
+      _confirmPasscodeError = null;
+      _nameError = null;
+      _guestCount = 1;
+      _showPasscode = false;
+      _showConfirmPasscode = false;
+    });
+  }
+
+  Future<void> _showNoticeDialog(BuildContext dialogContext, String message) {
+    return showDialog<void>(
+      context: dialogContext,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        final theme = Theme.of(dialogContext);
+        final colorScheme = theme.colorScheme;
+        return AlertDialog(
+          backgroundColor: colorScheme.surface.withValues(alpha: 0.96),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(
+              color: colorScheme.primary.withValues(alpha: 0.30),
+            ),
+          ),
+          title: Text(
+            'Invitation Response',
+            style: theme.textTheme.titleLarge?.copyWith(
+              color: colorScheme.primary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          content: Text(
+            message,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurface.withValues(alpha: 0.84),
+            ),
+          ),
+          actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              style: FilledButton.styleFrom(
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
+              ),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _buildSuccessMessage(String respondentName) {
+    final displayName = respondentName.isEmpty ? 'there' : respondentName;
+    return 'Hi, $displayName!\n\n'
+        'We received your response and will review it as we prepare the guest list for Gerald and Mervielynn\'s wedding.\n\n'
+        'You can check the status of your response anytime by tapping the message icon and entering your passcode.\n\n'
+        'Thank you for your patience and understanding.';
   }
 
   String? _validatePasscode(String value) {
@@ -157,24 +226,24 @@ class _RsvpFormModalState extends State<RsvpFormModal> {
         final theme = Theme.of(dialogContext);
         final colorScheme = theme.colorScheme;
         return AlertDialog(
-          backgroundColor: Colors.black.withValues(alpha: 0.96),
+          backgroundColor: colorScheme.surface.withValues(alpha: 0.96),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
             side: BorderSide(
-              color: colorScheme.primary.withValues(alpha: 0.28),
+              color: colorScheme.primary.withValues(alpha: 0.30),
             ),
           ),
           title: Text(
             'Will you be attending our wedding?',
             style: theme.textTheme.titleLarge?.copyWith(
-              color: Colors.white,
+              color: colorScheme.onSurface,
               fontWeight: FontWeight.w700,
             ),
           ),
           content: Text(
             'Please choose Yes or No to confirm your attendance.',
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: Colors.white.withValues(alpha: 0.82),
+              color: colorScheme.onSurface.withValues(alpha: 0.84),
             ),
           ),
           actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
@@ -182,15 +251,19 @@ class _RsvpFormModalState extends State<RsvpFormModal> {
             OutlinedButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
               style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.white,
+                foregroundColor: colorScheme.onSurface,
                 side: BorderSide(
-                  color: Colors.white.withValues(alpha: 0.16),
+                  color: colorScheme.primary.withValues(alpha: 0.22),
                 ),
               ),
               child: const Text('No'),
             ),
             FilledButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: FilledButton.styleFrom(
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
+              ),
               child: const Text('Yes'),
             ),
           ],
@@ -202,10 +275,16 @@ class _RsvpFormModalState extends State<RsvpFormModal> {
       return;
     }
 
+    if (value == false) {
+      Navigator.of(context, rootNavigator: true).pop();
+      return;
+    }
+
     setState(() {
       _isSubmitting = true;
     });
 
+    final navigator = Navigator.of(context, rootNavigator: true);
     final repository = createRsvpRepository();
     final submission = RsvpSubmission(
       passcode: _passcodeController.text.trim(),
@@ -216,26 +295,41 @@ class _RsvpFormModalState extends State<RsvpFormModal> {
 
     try {
       await repository.submitResponse(submission);
+      if (!mounted) {
+        return;
+      }
+      final respondentName = _nameController.text.trim();
+      _resetForm();
+      navigator.pop();
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!widget.hostContext.mounted) {
+          return;
+        }
+        await _showNoticeDialog(
+          widget.hostContext,
+          _buildSuccessMessage(respondentName),
+        );
+        if (!widget.hostContext.mounted) {
+          return;
+        }
+        AppSnackBar.show(
+          widget.hostContext,
+          'Thank you for sending your response',
+        );
+      });
     } on AppException catch (error) {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error.message),
-        ),
-      );
+      await _showNoticeDialog(context, error.message);
       return;
     } catch (_) {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'We could not save your RSVP right now. Please try again.',
-          ),
-        ),
+      await _showNoticeDialog(
+        context,
+        'We could not save your RSVP right now. Please try again.',
       );
       return;
     } finally {
@@ -245,40 +339,26 @@ class _RsvpFormModalState extends State<RsvpFormModal> {
         });
       }
     }
-
-    if (!mounted) {
-      return;
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          value
-              ? 'Thanks! We marked you as attending.'
-              : 'Thanks! We marked you as not attending.',
-        ),
-      ),
-    );
   }
 
   InputDecoration _fieldDecoration(String hintText, {Widget? suffixIcon}) {
     return InputDecoration(
       hintText: hintText,
       hintStyle: TextStyle(
-        color: Colors.white.withValues(alpha: 0.46),
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.46),
       ),
       filled: true,
-      fillColor: Colors.black.withValues(alpha: 0.22),
+      fillColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.30),
       contentPadding: const EdgeInsets.symmetric(
         horizontal: 16,
         vertical: 16,
       ),
       suffixIcon: suffixIcon,
-      suffixIconColor: Colors.white70,
+      suffixIconColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.70),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
         borderSide: BorderSide(
-          color: Colors.white.withValues(alpha: 0.12),
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.14),
         ),
       ),
       focusedBorder: OutlineInputBorder(
@@ -321,7 +401,7 @@ class _RsvpFormModalState extends State<RsvpFormModal> {
               Text(
                 isRequired ? '$label *' : label,
                 style: theme.textTheme.titleSmall?.copyWith(
-                  color: Colors.white,
+                  color: theme.colorScheme.onSurface,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -341,7 +421,7 @@ class _RsvpFormModalState extends State<RsvpFormModal> {
         Text(
           counterText,
           style: theme.textTheme.labelMedium?.copyWith(
-            color: Colors.white.withValues(alpha: 0.70),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.70),
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -381,10 +461,10 @@ class _RsvpFormModalState extends State<RsvpFormModal> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.22),
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.30),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.12),
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.14),
         ),
       ),
       child: Row(
@@ -402,7 +482,7 @@ class _RsvpFormModalState extends State<RsvpFormModal> {
                 Text(
                   '$_guestCount guest${_guestCount == 1 ? '' : 's'}',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onSurface,
                         fontWeight: FontWeight.w700,
                       ),
                 ),
@@ -410,7 +490,10 @@ class _RsvpFormModalState extends State<RsvpFormModal> {
                 Text(
                   'Tap + to add more guests',
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: Colors.white.withValues(alpha: 0.72),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.70),
                       ),
                 ),
               ],
@@ -418,7 +501,7 @@ class _RsvpFormModalState extends State<RsvpFormModal> {
           ),
           _GuestStepperButton(
             icon: Icons.add_rounded,
-            onPressed: _guestCount < 100 ? () => changeGuests(1) : null,
+            onPressed: _guestCount < 5 ? () => changeGuests(1) : null,
             colorScheme: colorScheme,
           ),
         ],
@@ -453,7 +536,7 @@ class _RsvpFormModalState extends State<RsvpFormModal> {
             ),
           ),
           Container(
-            color: Colors.black.withValues(alpha: 0.54),
+            color: Colors.black.withValues(alpha: 0.62),
           ),
           SafeArea(
             child: Padding(
@@ -462,6 +545,16 @@ class _RsvpFormModalState extends State<RsvpFormModal> {
                 children: [
                   Row(
                     children: [
+                      DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: colorScheme.primary.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: colorScheme.primary.withValues(alpha: 0.22),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -471,7 +564,7 @@ class _RsvpFormModalState extends State<RsvpFormModal> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: textTheme.headlineSmall?.copyWith(
-                                color: colorScheme.primary,
+                                color: colorScheme.onSurface,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -479,17 +572,31 @@ class _RsvpFormModalState extends State<RsvpFormModal> {
                             Text(
                               'Please complete the form below.',
                               style: textTheme.bodyMedium?.copyWith(
-                                color: Colors.white.withValues(alpha: 0.82),
+                                color: colorScheme.onSurface.withValues(alpha: 0.78),
                               ),
                             ),
                           ],
                         ),
                       ),
-                      IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        icon: const Icon(Icons.close),
-                        color: Colors.white,
+                  Tooltip(
+                    message: 'Close',
+                    child: Material(
+                      color: colorScheme.surface.withValues(alpha: 0.48),
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: () => Navigator.of(context).pop(),
+                        child: Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: Icon(
+                            Icons.close_rounded,
+                            color: colorScheme.onSurface,
+                            size: 20,
+                          ),
+                        ),
                       ),
+                    ),
+                  ),
                     ],
                   ),
                   SizedBox(height: isCompact ? 12 : 16),
@@ -499,20 +606,29 @@ class _RsvpFormModalState extends State<RsvpFormModal> {
                         constraints: const BoxConstraints(maxWidth: 860),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(28),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.18),
-                              borderRadius: BorderRadius.circular(28),
-                              border: Border.all(
-                                color: colorScheme.primary.withValues(alpha: 0.36),
-                                width: 1.2,
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: colorScheme.surface.withValues(alpha: 0.26),
+                                borderRadius: BorderRadius.circular(28),
+                                border: Border.all(
+                                  color: colorScheme.primary.withValues(alpha: 0.18),
+                                  width: 1.1,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.22),
+                                    blurRadius: 24,
+                                    offset: const Offset(0, 12),
+                                  ),
+                                ],
                               ),
-                            ),
-                            child: SingleChildScrollView(
-                              padding: EdgeInsets.all(isCompact ? 16 : 20),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
+                              child: SingleChildScrollView(
+                                padding: EdgeInsets.all(isCompact ? 16 : 20),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
                                   _buildFieldCard(
                                     label: 'Passcode',
                                     errorText: _passcodeError,
@@ -528,7 +644,9 @@ class _RsvpFormModalState extends State<RsvpFormModal> {
                                       inputFormatters: [
                                         LengthLimitingTextInputFormatter(6),
                                       ],
-                                      style: const TextStyle(color: Colors.white),
+                                      style: TextStyle(
+                                        color: colorScheme.onSurface,
+                                      ),
                                       decoration: _fieldDecoration(
                                         'Passcode',
                                         suffixIcon: IconButton(
@@ -577,7 +695,9 @@ class _RsvpFormModalState extends State<RsvpFormModal> {
                                       inputFormatters: [
                                         LengthLimitingTextInputFormatter(6),
                                       ],
-                                      style: const TextStyle(color: Colors.white),
+                                      style: TextStyle(
+                                        color: colorScheme.onSurface,
+                                      ),
                                       decoration: _fieldDecoration(
                                         'Confirm passcode',
                                         suffixIcon: IconButton(
@@ -616,7 +736,9 @@ class _RsvpFormModalState extends State<RsvpFormModal> {
                                       maxLength: 50,
                                       maxLengthEnforcement:
                                           MaxLengthEnforcement.enforced,
-                                      style: const TextStyle(color: Colors.white),
+                                      style: TextStyle(
+                                        color: colorScheme.onSurface,
+                                      ),
                                       decoration: _fieldDecoration('Full name')
                                           .copyWith(counterText: ''),
                                       onChanged: (value) {
@@ -633,28 +755,31 @@ class _RsvpFormModalState extends State<RsvpFormModal> {
                                   _buildFieldCard(
                                     label: 'Number of Guests',
                                     errorText: null,
-                                    counterText: '$_guestCount / 100',
+                                    counterText: '$_guestCount / 5',
                                     child: _buildGuestStepper(context),
                                   ),
                                   const SizedBox(height: 18),
                                   FilledButton(
                                     onPressed: _isSubmitting ? null : () => _submit(),
-                                    style: FilledButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 20,
-                                        vertical: 16,
+                                      style: FilledButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 20,
+                                          vertical: 16,
+                                        ),
+                                        backgroundColor: colorScheme.primary,
+                                        foregroundColor: colorScheme.onPrimary,
+                                        textStyle: textTheme.titleMedium?.copyWith(
+                                          fontWeight: FontWeight.w700,
+                                        ),
                                       ),
-                                      textStyle: textTheme.titleMedium?.copyWith(
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
                                     child: Text(
                                       _isSubmitting
                                           ? 'Sending...'
                                           : 'Send Your Invitation Response',
                                     ),
                                   ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           ),
@@ -664,10 +789,10 @@ class _RsvpFormModalState extends State<RsvpFormModal> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'We will connect this to Supabase next.',
+                    'Saved securely through the RSVP service.',
                     textAlign: TextAlign.center,
                     style: textTheme.bodyMedium?.copyWith(
-                      color: Colors.white.withValues(alpha: 0.82),
+                      color: colorScheme.onSurface.withValues(alpha: 0.76),
                       fontStyle: FontStyle.italic,
                     ),
                   ),
@@ -710,11 +835,11 @@ class _GuestStepperButton extends StatelessWidget {
             shape: BoxShape.circle,
             color: isEnabled
                 ? colorScheme.primary.withValues(alpha: 0.20)
-                : Colors.white.withValues(alpha: 0.06),
+                : colorScheme.surface.withValues(alpha: 0.50),
             border: Border.all(
               color: isEnabled
                   ? colorScheme.primary.withValues(alpha: 0.60)
-                  : Colors.white.withValues(alpha: 0.10),
+                  : colorScheme.primary.withValues(alpha: 0.12),
               width: 1.1,
             ),
           ),
@@ -722,7 +847,7 @@ class _GuestStepperButton extends StatelessWidget {
             icon,
             color: isEnabled
                 ? colorScheme.primary
-                : Colors.white.withValues(alpha: 0.30),
+                : colorScheme.onSurface.withValues(alpha: 0.34),
             size: 24,
           ),
         ),

@@ -37,14 +37,24 @@ class RsvpSupabaseRemoteDataSource implements RsvpRemoteDataSource {
   @override
   Future<void> submitResponse(RsvpSubmission submission) async {
     final client = await _client();
-    await client.rpc(
-      rpcName,
-      params: <String, dynamic>{
-        'p_passcode': submission.passcode,
-        'p_name': submission.fullName.isEmpty ? null : submission.fullName,
-        'p_guests': submission.guestCount,
-      },
-    );
+    try {
+      await client.rpc(
+        rpcName,
+        params: <String, dynamic>{
+          'p_passcode': submission.passcode,
+          'p_name': submission.fullName.isEmpty ? null : submission.fullName,
+          'p_guests': submission.guestCount,
+        },
+      );
+    } on PostgrestException catch (error) {
+      final message = error.message.toLowerCase();
+      if (error.code == '23505' ||
+          message.contains('already exists') ||
+          message.contains('duplicate key value')) {
+        throw const DuplicatePasscodeException();
+      }
+      throw AppException(error.message);
+    }
   }
 
   RsvpSubmission _toSubmission(Map<String, dynamic> row) {
