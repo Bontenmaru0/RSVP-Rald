@@ -602,7 +602,6 @@ class _GalleryModal extends StatelessWidget {
     'lib/assets/wedding-imgs/1.jpg',
     'lib/assets/wedding-imgs/2.jpg',
     'lib/assets/wedding-imgs/3.jpg',
-    'lib/assets/wedding-imgs/4.jpg',
     'lib/assets/wedding-imgs/5.jpg',
     'lib/assets/wedding-imgs/6.jpg',
     'lib/assets/wedding-imgs/7.jpg',
@@ -613,11 +612,8 @@ class _GalleryModal extends StatelessWidget {
     'lib/assets/wedding-imgs/12.jpg',
     'lib/assets/wedding-imgs/13.jpg',
     'lib/assets/wedding-imgs/14.jpg',
-    'lib/assets/wedding-imgs/a 1.jpg',
     'lib/assets/wedding-imgs/A 2.jpg',
     'lib/assets/wedding-imgs/A 3.jpg',
-    'lib/assets/wedding-imgs/A 4.jpg',
-    'lib/assets/wedding-imgs/A 5.jpg',
   ];
 
   @override
