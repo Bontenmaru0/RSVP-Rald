@@ -3,7 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import 'features/home/presentation/home_page.dart';
-import 'theme/app_theme.dart';
+import 'core/theme/app_theme.dart';
 
 class WeddingRsvpApp extends StatelessWidget {
   const WeddingRsvpApp({super.key});

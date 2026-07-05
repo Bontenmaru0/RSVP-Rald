@@ -1,0 +1,44 @@
+Current working architecture for `rald`
+
+lib/
+  core/
+    config/
+      supabase_config.dart
+    theme/
+      app_theme.dart
+  features/
+    home/
+      data/
+        home_content.dart
+      domain/
+        entities/
+          location_details.dart
+      presentation/
+        home_page.dart
+        teaser_video_card.dart
+        teaser_video_card_io.dart
+        teaser_video_card_web.dart
+        widgets/
+          gallery_modal.dart
+          gallery_tab.dart
+          location_modal.dart
+          wedding_background.dart
+          wedding_navigation_rail.dart
+          wedding_overlay.dart
+    rsvp/
+      data/
+        datasources/
+          rsvp_remote_data_source.dart
+        repositories/
+          rsvp_repository_impl.dart
+      domain/
+        entities/
+          rsvp_submission.dart
+        repositories/
+          rsvp_repository.dart
+
+Notes:
+- `home_page.dart` is now only the screen composer.
+- UI sections live in `presentation/widgets`.
+- Static content for the home screen lives in `data/home_content.dart`.
+- Supabase-ready boundaries live under `core/config` and `features/rsvp`.
