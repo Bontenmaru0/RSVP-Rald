@@ -1,13 +1,15 @@
 class RsvpSubmission {
   const RsvpSubmission({
+    required this.passcode,
     required this.fullName,
+    required this.guestCount,
     required this.isAttending,
-    required this.message,
-    required this.submittedAtIso8601,
+    this.submittedAtIso8601 = '',
   });
 
+  final String passcode;
   final String fullName;
+  final int guestCount;
   final bool isAttending;
-  final String message;
   final String submittedAtIso8601;
 }

@@ -1,0 +1,45 @@
+CREATE OR REPLACE FUNCTION insert_invitation_passcode(
+    p_passcode VARCHAR(6),
+    p_name VARCHAR(50) DEFAULT NULL,
+    p_guests INTEGER DEFAULT NULL
+)
+RETURNS invitation_passcodes
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_row invitation_passcodes;
+BEGIN
+    -- Passcode cannot be null or empty
+    IF p_passcode IS NULL OR trim(p_passcode) = '' THEN
+        RAISE EXCEPTION 'Passcode cannot be null or empty.';
+    END IF;
+
+    -- Passcode must be exactly 6 characters
+    IF char_length(trim(p_passcode)) <> 6 THEN
+        RAISE EXCEPTION 'Passcode must be exactly 6 characters.';
+    END IF;
+
+    -- Passcode must be unique
+    IF EXISTS (
+        SELECT 1
+        FROM invitation_passcodes
+        WHERE passcode = p_passcode
+    ) THEN
+        RAISE EXCEPTION 'Passcode "%" already exists.', p_passcode;
+    END IF;
+
+    INSERT INTO invitation_passcodes (
+        passcode,
+        name,
+        guests
+    )
+    VALUES (
+        trim(p_passcode),
+        p_name,
+        p_guests
+    )
+    RETURNING * INTO v_row;
+
+    RETURN v_row;
+END;
+$$;

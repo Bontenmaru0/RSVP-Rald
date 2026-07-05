@@ -1,3 +1,4 @@
+import '../../../../core/network/safe_remote_call.dart';
 import '../../domain/entities/rsvp_submission.dart';
 import '../../domain/repositories/rsvp_repository.dart';
 import '../datasources/rsvp_remote_data_source.dart';
@@ -9,11 +10,11 @@ class RsvpRepositoryImpl implements RsvpRepository {
 
   @override
   Future<List<RsvpSubmission>> fetchResponses() {
-    return _remoteDataSource.fetchResponses();
+    return safeRemoteCall(_remoteDataSource.fetchResponses);
   }
 
   @override
   Future<void> submitResponse(RsvpSubmission submission) {
-    return _remoteDataSource.submitResponse(submission);
+    return safeRemoteCall(() => _remoteDataSource.submitResponse(submission));
   }
 }

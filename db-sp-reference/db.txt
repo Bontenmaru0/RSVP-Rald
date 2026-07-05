@@ -1,0 +1,11 @@
+CREATE TABLE invitation_passcodes (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    passcode VARCHAR(6) NOT NULL UNIQUE,
+    name VARCHAR(50),
+    guests INTEGER,
+    datetime_sent TIMESTAMPTZ NOT NULL,
+    confirmation_status VARCHAR(20) NOT NULL DEFAULT 'ForConfirmation',
+
+    CONSTRAINT chk_confirmation_status
+        CHECK (confirmation_status IN ('ForConfirmation', 'Confirmed'))
+);

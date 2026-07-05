@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../../data/home_content.dart';
+import '../../../rsvp/presentation/rsvp_form_modal.dart';
 import 'location_modal.dart';
 
 class WeddingNavigationRail extends StatelessWidget {
@@ -48,9 +49,9 @@ class WeddingNavigationRail extends StatelessWidget {
                 const SizedBox(height: 14),
                 _RailIconButton(
                   icon: Icons.message,
-                  label: "Respond to our invitation",
+                  label: 'Send RSVP response',
                   colorScheme: colorScheme,
-                  onPressed: () {},
+                  onPressed: () => showRsvpFormModal(context),
                 ),
               ],
             ),

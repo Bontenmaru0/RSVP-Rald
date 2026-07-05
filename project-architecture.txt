@@ -1,0 +1,54 @@
+lib/
+|-- main.dart                          # Loads .env, initializes Supabase, runs ProviderScope
+|-- app.dart                           # MaterialApp config, routes, app theme usage
+|-- core/
+|   |-- constants/                     # Shared constants/helpers (e.g., time_ago)
+|   |-- enums/                         # Shared enums (e.g., comment context type)
+|   |-- models/                        # Core models (article, comment, image, profile)
+|   |-- services/                      # Core service accessors (e.g., Supabase client)
+|   `-- utils/                         # Utilities (e.g., snackbar helper)
+|-- features/
+|   |-- auth/
+|   |   |-- data/                      # Supabase auth API calls
+|   |   |-- presentation/              # Login/register screens
+|   |   `-- state/                     # Auth controller/provider state
+|   |-- blogs/
+|   |   |-- data/                      # Article RPC + storage upload/delete logic
+|   |   |-- presentation/              # Home/feed + create/update article UI
+|   |   `-- state/                     # Blogs state + controller (fetch/create/update/delete)
+|   |-- profiles/
+|   |   |-- data/                      # Profile RPC + avatar upload/remove logic
+|   |   |-- presentation/              # Create/update/profile screens + profile widgets
+|   |   `-- state/                     # Async profile controller/provider
+|   `-- comments/
+|       |-- data/                      # Comment RPC + image upload/delete logic
+|       |-- presentation/              # Comment panel and comment widgets
+|       `-- state/                     # Comments state, controller, state-updater helpers
+`-- shared/
+    |-- theme/                         # App theme config
+    `-- widgets/                       # Reusable widgets (nav menu, image grids, refresh wrapper, etc.)
+
+platform folders/
+- android/
+- ios/
+- web/
+- windows/
+- linux/
+- macos/
+
+test/
+- Flutter unit/widget tests
+
+Architecture Notes
+- Feature-first vertical slicing:
+  - Each domain keeps `data`, `state`, and `presentation` together.
+- Riverpod state flow:
+  - UI watches providers in `state/`.
+  - Controllers orchestrate async operations and loading/error states.
+  - Services in `data/` isolate Supabase RPC/storage/auth calls.
+- Comments domain design:
+  - `CommentsState` stores lists in maps keyed by `articleId` and `imageId`.
+  - Per-comment loading maps support granular update/delete indicators.
+- Backend integration:
+  - Supabase is initialized at app startup from `.env` keys.
+  - Features call RPC functions and storage buckets through service classes.
