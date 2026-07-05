@@ -11,7 +11,7 @@ void _openGalleryModal(BuildContext context) {
     barrierDismissible: true,
     barrierLabel: 'Gallery',
     barrierColor: Colors.black.withValues(alpha: 0.32),
-    transitionDuration: const Duration(milliseconds: 220),
+    transitionDuration: const Duration(milliseconds: 320),
     pageBuilder: (dialogContext, animation, secondaryAnimation) {
       return const _GalleryModal();
     },
@@ -20,11 +20,18 @@ void _openGalleryModal(BuildContext context) {
         parent: animation,
         curve: Curves.easeOutCubic,
       );
+      final slide = Tween<Offset>(
+        begin: const Offset(-0.22, 0),
+        end: Offset.zero,
+      ).animate(curved);
       return FadeTransition(
         opacity: curved,
         child: ScaleTransition(
-          scale: Tween<double>(begin: 0.98, end: 1.0).animate(curved),
-          child: child,
+          scale: Tween<double>(begin: 0.985, end: 1.0).animate(curved),
+          child: SlideTransition(
+            position: slide,
+            child: child,
+          ),
         ),
       );
     },
@@ -145,21 +152,21 @@ class _WeddingNavigationRail extends StatelessWidget {
               children: [
                 _RailIconButton(
                   icon: Icons.church,
-                  label: 'Church',
+                  label: 'Church Location',
                   colorScheme: colorScheme,
                   onPressed: () {},
                 ),
                 const SizedBox(height: 14),
                 _RailIconButton(
                   icon: Icons.wine_bar,
-                  label: 'Reception',
+                  label: 'Reception Location',
                   colorScheme: colorScheme,
                   onPressed: () {},
                 ),
                 const SizedBox(height: 14),
                 _RailIconButton(
                   icon: Icons.message,
-                  label: 'RSVP',
+                  label: "Respond to our invitation",
                   colorScheme: colorScheme,
                   onPressed: () {},
                 ),
