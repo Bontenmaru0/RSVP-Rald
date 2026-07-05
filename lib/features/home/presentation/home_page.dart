@@ -3,6 +3,8 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+import 'teaser_video_card.dart';
+
 void _openGalleryModal(BuildContext context) {
   showGeneralDialog(
     context: context,
@@ -329,11 +331,24 @@ class _GalleryViewer extends StatefulWidget {
 class _GalleryViewerState extends State<_GalleryViewer> {
   late final PageController _pageController;
   int _currentIndex = 0;
+  bool _didPrecacheImages = false;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didPrecacheImages) {
+      return;
+    }
+    _didPrecacheImages = true;
+    for (final imagePath in widget.images) {
+      precacheImage(AssetImage(imagePath), context);
+    }
   }
 
   @override
@@ -352,7 +367,7 @@ class _GalleryViewerState extends State<_GalleryViewer> {
     final rootPadding = EdgeInsets.all(isCompact ? 16 : 20);
     final topGap = isCompact ? 10.0 : 14.0;
     final betweenImageAndStrip = isCompact ? 10.0 : 14.0;
-
+    final galleryCount = widget.images.length + 1;
     return Material(
       color: Colors.transparent,
       child: Stack(
@@ -424,17 +439,29 @@ class _GalleryViewerState extends State<_GalleryViewer> {
                                     children: [
                                       PageView.builder(
                                         controller: _pageController,
-                                        itemCount: widget.images.length,
+                                        itemCount: galleryCount,
                                         onPageChanged: (index) {
                                           setState(() => _currentIndex = index);
                                         },
                                         itemBuilder: (context, index) {
+                                          if (index == 0) {
+                                            return Padding(
+                                              padding: EdgeInsets.all(
+                                                isCompact ? 10 : 12,
+                                              ),
+                                              child: const TeaserVideoCard(
+                                                assetPath:
+                                                    'lib/assets/wedding-imgs/teaser-video.mp4',
+                                              ),
+                                            );
+                                          }
+
                                           return Padding(
                                             padding: EdgeInsets.all(
                                               isCompact ? 10 : 12,
                                             ),
                                             child: _ZoomableGalleryImage(
-                                              imagePath: widget.images[index],
+                                              imagePath: widget.images[index - 1],
                                             ),
                                           );
                                         },
@@ -444,7 +471,7 @@ class _GalleryViewerState extends State<_GalleryViewer> {
                                         right: 14,
                                         child: _GalleryCounter(
                                           currentIndex: _currentIndex + 1,
-                                          total: widget.images.length,
+                                          total: galleryCount,
                                         ),
                                       ),
                                     ],
@@ -457,6 +484,7 @@ class _GalleryViewerState extends State<_GalleryViewer> {
                         SizedBox(height: betweenImageAndStrip),
                         _GalleryPreviewStrip(
                           images: widget.images,
+                          includeTeaser: true,
                           currentIndex: _currentIndex,
                           onTapPreview: (index) {
                             _pageController.animateToPage(
@@ -576,11 +604,13 @@ class _GalleryScatterLayer extends StatelessWidget {
 class _GalleryPreviewStrip extends StatelessWidget {
   const _GalleryPreviewStrip({
     required this.images,
+    required this.includeTeaser,
     required this.currentIndex,
     required this.onTapPreview,
   });
 
   final List<String> images;
+  final bool includeTeaser;
   final int currentIndex;
   final ValueChanged<int> onTapPreview;
 
@@ -590,12 +620,14 @@ class _GalleryPreviewStrip extends StatelessWidget {
       height: 104,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        itemCount: images.length,
+        itemCount: images.length + (includeTeaser ? 1 : 0),
         clipBehavior: Clip.none,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         separatorBuilder: (context, index) => const SizedBox(width: 10),
         itemBuilder: (context, index) {
           final isActive = index == currentIndex;
+          final isTeaser = includeTeaser && index == 0;
+          final imageIndex = includeTeaser ? index - 1 : index;
 
           return GestureDetector(
             onTap: () => onTapPreview(index),
@@ -627,11 +659,50 @@ class _GalleryPreviewStrip extends StatelessWidget {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      Image.asset(
-                        images[index],
-                        fit: BoxFit.cover,
-                        filterQuality: FilterQuality.low,
-                      ),
+                      if (isTeaser)
+                        Container(
+                          color: Colors.black,
+                          child: const Center(
+                            child: Icon(
+                              Icons.play_circle_fill,
+                              size: 28,
+                              color: Colors.white,
+                            ),
+                          ),
+                        )
+                      else
+                        Image.asset(
+                          images[imageIndex],
+                          fit: BoxFit.cover,
+                          filterQuality: FilterQuality.low,
+                        ),
+                      if (isTeaser)
+                        Positioned(
+                          left: 6,
+                          right: 6,
+                          bottom: 6,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.45),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              child: Text(
+                                'Teaser',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                       if (isActive)
                         Container(
                           color: Theme.of(context)
