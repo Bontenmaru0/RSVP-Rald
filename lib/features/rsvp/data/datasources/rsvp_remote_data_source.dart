@@ -4,4 +4,5 @@ abstract class RsvpRemoteDataSource {
   Future<void> submitResponse(RsvpSubmission submission);
   Future<List<RsvpSubmission>> fetchResponses();
   Future<RsvpSubmission> fetchResponseByPasscode(String passcode);
+  Future<bool> isAdminPasscode(String passcode);
 }

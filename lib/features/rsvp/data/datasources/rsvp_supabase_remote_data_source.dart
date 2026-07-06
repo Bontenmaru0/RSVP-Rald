@@ -10,11 +10,13 @@ class RsvpSupabaseRemoteDataSource implements RsvpRemoteDataSource {
     this.tableName = 'invitation_passcodes',
     this.rpcName = 'insert_invitation_passcode',
     this.statusRpcName = 'get_invitation_by_passcode',
+    this.adminStatusRpcName = 'is_admin_passcode',
   });
 
   final String tableName;
   final String rpcName;
   final String statusRpcName;
+  final String adminStatusRpcName;
 
   Future<SupabaseClient> _client() async {
     final initialized = await RsvpSupabaseBootstrap.ensureInitialized();
@@ -56,6 +58,27 @@ class RsvpSupabaseRemoteDataSource implements RsvpRemoteDataSource {
         if (first is Map<String, dynamic>) {
           return _toSubmission(first);
         }
+      }
+
+      throw const InvalidRemoteResponseException();
+    } on PostgrestException catch (error) {
+      throw AppException(error.message);
+    }
+  }
+
+  @override
+  Future<bool> isAdminPasscode(String passcode) async {
+    final client = await _client();
+    try {
+      final response = await client.rpc(
+        adminStatusRpcName,
+        params: <String, dynamic>{
+          'p_passcode': passcode,
+        },
+      );
+
+      if (response is bool) {
+        return response;
       }
 
       throw const InvalidRemoteResponseException();

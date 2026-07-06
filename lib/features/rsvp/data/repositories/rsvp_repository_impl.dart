@@ -19,6 +19,11 @@ class RsvpRepositoryImpl implements RsvpRepository {
   }
 
   @override
+  Future<bool> isAdminPasscode(String passcode) {
+    return safeRemoteCall(() => _remoteDataSource.isAdminPasscode(passcode));
+  }
+
+  @override
   Future<void> submitResponse(RsvpSubmission submission) {
     return safeRemoteCall(() => _remoteDataSource.submitResponse(submission));
   }
