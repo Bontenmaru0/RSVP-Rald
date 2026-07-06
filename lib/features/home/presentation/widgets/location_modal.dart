@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/location_details.dart';
+import 'cached_asset_image.dart';
 
 Future<void> showLocationModal(
   BuildContext context, {
@@ -58,15 +59,15 @@ class LocationModal extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset(
-            'lib/assets/wedding-imgs/default-app-bg.png',
+          CachedAssetImage(
+            assetPath: 'lib/assets/wedding-imgs/default-app-bg.png',
             fit: BoxFit.cover,
             filterQuality: FilterQuality.low,
           ),
           ImageFiltered(
             imageFilter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-            child: Image.asset(
-              'lib/assets/wedding-imgs/default-app-bg.png',
+            child: CachedAssetImage(
+              assetPath: 'lib/assets/wedding-imgs/default-app-bg.png',
               fit: BoxFit.cover,
               filterQuality: FilterQuality.low,
             ),
@@ -150,9 +151,11 @@ class LocationModal extends StatelessWidget {
                                                 width: qrSize,
                                                 padding: const EdgeInsets.all(14),
                                                 color: Colors.white,
-                                                child: Image.asset(
-                                                  details.qrAssetPath,
+                                                child: CachedAssetImage(
+                                                  assetPath: details.qrAssetPath,
                                                   fit: BoxFit.contain,
+                                                  filterQuality:
+                                                      FilterQuality.high,
                                                 ),
                                               ),
                                             ),

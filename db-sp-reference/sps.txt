@@ -48,7 +48,6 @@ $$;
 ------------------------------------------------------------------------------------
 
 //Get guests info by Passcode
-
 CREATE OR REPLACE FUNCTION get_invitation_by_passcode(
     p_passcode VARCHAR(6)
 )
@@ -83,7 +82,7 @@ END;
 $$;
 
 ------------------------------------------------------------------------------------
-
+// admin check
 CREATE OR REPLACE FUNCTION is_admin_passcode(
     p_passcode VARCHAR(6)
 )
@@ -96,4 +95,169 @@ AS $$
         WHERE passcode = trim(p_passcode)
           AND admin = TRUE
     );
+$$;
+
+------------------------------------------------------------------------------------
+
+//get guest list
+CREATE OR REPLACE FUNCTION admin_get_guests(
+    p_passcode VARCHAR(6) DEFAULT NULL,
+    p_name VARCHAR(50) DEFAULT NULL,
+    p_guests INTEGER DEFAULT NULL,
+    p_confirmation_status VARCHAR(20) DEFAULT NULL,
+    p_datetime_sent DATE DEFAULT NULL,
+    p_datetime_updated_by_admin DATE DEFAULT NULL
+)
+RETURNS TABLE (
+    id BIGINT,
+    passcode VARCHAR(6),
+    name VARCHAR(50),
+    guests INTEGER,
+    datetime_sent TIMESTAMPTZ,
+    datetime_updated_by_admin TIMESTAMPTZ,
+    confirmation_status VARCHAR(20)
+)
+LANGUAGE sql
+AS $$
+    SELECT
+        i.id,
+        i.passcode,
+        i.name,
+        i.guests,
+        i.datetime_sent,
+        i.datetime_updated_by_admin,
+        i.confirmation_status
+    FROM invitation_passcodes i
+    WHERE
+        (p_passcode IS NULL OR i.passcode ILIKE '%' || trim(p_passcode) || '%')
+    AND (p_name IS NULL OR i.name ILIKE '%' || trim(p_name) || '%')
+    AND (p_guests IS NULL OR i.guests = p_guests)
+    AND (p_confirmation_status IS NULL OR i.confirmation_status = p_confirmation_status)
+    AND (
+        p_datetime_sent IS NULL
+        OR i.datetime_sent::DATE = p_datetime_sent
+    )
+    AND (
+        p_datetime_updated_by_admin IS NULL
+        OR i.datetime_updated_by_admin::DATE = p_datetime_updated_by_admin
+    )
+    ORDER BY i.id DESC;
+$$;
+
+------------------------------------------------------------------------------------
+
+//update guests status
+CREATE OR REPLACE FUNCTION admin_update_confirmation_status(
+    p_passcode VARCHAR(6),
+    p_status VARCHAR(20)
+)
+RETURNS TEXT
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_name VARCHAR(50);
+BEGIN
+    -- Validate status
+    IF p_status NOT IN ('ForConfirmation', 'Confirmed', 'Declined') THEN
+        RAISE EXCEPTION 'Unknown confirmation status.';
+    END IF;
+
+    UPDATE invitation_passcodes
+    SET confirmation_status = p_status,
+        datetime_updated_by_admin = NOW()
+    WHERE passcode = trim(p_passcode)
+    RETURNING name INTO v_name;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Guest not found.';
+    END IF;
+
+    RETURN format(
+        'Successfully updated %s''s status to %s.',
+        COALESCE(v_name, 'Guest'),
+        p_status
+    );
+
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE EXCEPTION 'Something went wrong.';
+END;
+$$;
+
+------------------------------------------------------------------------------------
+
+//update guests count
+CREATE OR REPLACE FUNCTION admin_update_guest_count(
+    p_passcode VARCHAR(6),
+    p_guests INTEGER
+)
+RETURNS TEXT
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_name VARCHAR(50);
+BEGIN
+    IF p_guests IS NULL OR p_guests < 0 THEN
+        RAISE EXCEPTION 'Invalid number of guests.';
+    END IF;
+
+    UPDATE invitation_passcodes
+    SET guests = p_guests,
+        datetime_updated_by_admin = NOW()
+    WHERE passcode = trim(p_passcode)
+    RETURNING name INTO v_name;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Guest not found.';
+    END IF;
+
+    RETURN format(
+        'Successfully updated %s''s guest count to %s.',
+        COALESCE(v_name, 'Guest'),
+        p_guests
+    );
+
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE EXCEPTION 'Something went wrong.';
+END;
+$$;
+
+------------------------------------------------------------------------------------
+
+//guests deletion also ready for bulk checklist deletion
+CREATE OR REPLACE FUNCTION admin_delete_guests(
+    p_passcodes VARCHAR[]
+)
+RETURNS TEXT
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_names TEXT;
+    v_count INTEGER;
+BEGIN
+    SELECT string_agg(name, ', ')
+    INTO v_names
+    FROM invitation_passcodes
+    WHERE passcode = ANY(p_passcodes);
+
+    DELETE FROM invitation_passcodes
+    WHERE passcode = ANY(p_passcodes);
+
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+
+    IF v_count = 0 THEN
+        RAISE EXCEPTION 'No guests were found.';
+    END IF;
+
+    RETURN format(
+        'Successfully deleted %s guest(s): %s.',
+        v_count,
+        COALESCE(v_names, '')
+    );
+
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE EXCEPTION 'Something went wrong.';
+END;
 $$;

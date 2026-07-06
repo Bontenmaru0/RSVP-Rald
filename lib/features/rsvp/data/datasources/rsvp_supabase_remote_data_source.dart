@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/errors/app_exceptions.dart';
+import '../../domain/entities/admin_guest_record.dart';
 import '../../domain/entities/rsvp_submission.dart';
 import '../rsvp_supabase_bootstrap.dart';
 import 'rsvp_remote_data_source.dart';
@@ -36,6 +37,43 @@ class RsvpSupabaseRemoteDataSource implements RsvpRemoteDataSource {
         .whereType<Map<String, dynamic>>()
         .map(_toSubmission)
         .toList(growable: false);
+  }
+
+  @override
+  Future<List<AdminGuestRecord>> fetchAdminGuests({
+    String? passcode,
+    String? name,
+    int? guestCount,
+    String? confirmationStatus,
+    DateTime? datetimeSent,
+    DateTime? datetimeUpdatedByAdmin,
+  }) async {
+    final client = await _client();
+    try {
+      final response = await client.rpc(
+        'admin_get_guests',
+        params: <String, dynamic>{
+          'p_passcode': passcode,
+          'p_name': name,
+          'p_guests': guestCount,
+          'p_confirmation_status': confirmationStatus,
+          'p_datetime_sent': datetimeSent?.toIso8601String().split('T').first,
+          'p_datetime_updated_by_admin':
+              datetimeUpdatedByAdmin?.toIso8601String().split('T').first,
+        },
+      );
+
+      if (response is List) {
+        return response
+            .whereType<Map<String, dynamic>>()
+            .map(_toAdminGuestRecord)
+            .toList(growable: false);
+      }
+
+      throw const InvalidRemoteResponseException();
+    } on PostgrestException catch (error) {
+      throw AppException(error.message);
+    }
   }
 
   @override
@@ -88,6 +126,62 @@ class RsvpSupabaseRemoteDataSource implements RsvpRemoteDataSource {
   }
 
   @override
+  Future<String> updateAdminGuestCount({
+    required String passcode,
+    required int guestCount,
+  }) async {
+    final client = await _client();
+    try {
+      final response = await client.rpc(
+        'admin_update_guest_count',
+        params: <String, dynamic>{
+          'p_passcode': passcode,
+          'p_guests': guestCount,
+        },
+      );
+      return response?.toString() ?? '';
+    } on PostgrestException catch (error) {
+      throw AppException(error.message);
+    }
+  }
+
+  @override
+  Future<String> updateAdminConfirmationStatus({
+    required String passcode,
+    required String confirmationStatus,
+  }) async {
+    final client = await _client();
+    try {
+      final response = await client.rpc(
+        'admin_update_confirmation_status',
+        params: <String, dynamic>{
+          'p_passcode': passcode,
+          'p_status': confirmationStatus,
+        },
+      );
+      return response?.toString() ?? '';
+    } on PostgrestException catch (error) {
+      throw AppException(error.message);
+    }
+  }
+
+  @override
+  Future<String> deleteAdminGuests(List<String> passcodes) async {
+    final client = await _client();
+    try {
+      final response = await client.rpc(
+        'admin_delete_guests',
+        params: <String, dynamic>{
+          'p_passcodes': passcodes,
+        },
+      );
+      return response?.toString() ?? '';
+    } on PostgrestException catch (error) {
+      throw AppException(error.message);
+    }
+  }
+
+  @override
   Future<void> submitResponse(RsvpSubmission submission) async {
     final client = await _client();
     try {
@@ -120,6 +214,21 @@ class RsvpSupabaseRemoteDataSource implements RsvpRemoteDataSource {
       isAttending: row['confirmation_status']?.toString() == 'Confirmed',
       confirmationStatus: row['confirmation_status']?.toString() ?? '',
       submittedAtIso8601: row['datetime_sent']?.toString() ?? '',
+    );
+  }
+
+  AdminGuestRecord _toAdminGuestRecord(Map<String, dynamic> row) {
+    return AdminGuestRecord(
+      id: row['id'] is int ? row['id'] as int : int.tryParse('${row['id']}') ?? 0,
+      passcode: row['passcode']?.toString() ?? '',
+      fullName: row['name']?.toString() ?? '',
+      guestCount: row['guests'] is int
+          ? row['guests'] as int
+          : int.tryParse(row['guests']?.toString() ?? '') ?? 0,
+      confirmationStatus: row['confirmation_status']?.toString() ?? '',
+      datetimeSentIso8601: row['datetime_sent']?.toString() ?? '',
+      datetimeUpdatedByAdminIso8601:
+          row['datetime_updated_by_admin']?.toString() ?? '',
     );
   }
 }

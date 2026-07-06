@@ -4,9 +4,11 @@ CREATE TABLE invitation_passcodes (
     name VARCHAR(50),
     guests INTEGER,
     datetime_sent TIMESTAMPTZ NOT NULL,
-    admin BOOLEAN NOT NULL DEFAULT FALSE,
     confirmation_status VARCHAR(20) NOT NULL DEFAULT 'ForConfirmation',
     CONSTRAINT chk_confirmation_status
-        CHECK (confirmation_status IN ('ForConfirmation', 'Confirmed', 'Declined'))
+        CHECK (confirmation_status IN ('ForConfirmation', 'Confirmed', 'Declined')),
         --added admin
+    
+    admin BOOLEAN NOT NULL DEFAULT FALSE,
+    datetime_updated_by_admin TIMESTAMPTZ NULL
 );

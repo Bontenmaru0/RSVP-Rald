@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+import 'cached_asset_image.dart';
 import '../../data/home_content.dart';
 import '../teaser_video_card.dart';
 
@@ -107,15 +108,15 @@ class _GalleryViewerState extends State<GalleryViewer> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset(
-            'lib/assets/wedding-imgs/default-app-bg.png',
+          CachedAssetImage(
+            assetPath: 'lib/assets/wedding-imgs/default-app-bg.png',
             fit: BoxFit.cover,
             filterQuality: FilterQuality.low,
           ),
           ImageFiltered(
             imageFilter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-            child: Image.asset(
-              'lib/assets/wedding-imgs/default-app-bg.png',
+            child: CachedAssetImage(
+              assetPath: 'lib/assets/wedding-imgs/default-app-bg.png',
               fit: BoxFit.cover,
               filterQuality: FilterQuality.low,
             ),
@@ -323,8 +324,8 @@ class GalleryScatterLayer extends StatelessWidget {
               ],
             ),
             clipBehavior: Clip.antiAlias,
-            child: Image.asset(
-              imagePath,
+            child: CachedAssetImage(
+              assetPath: imagePath,
               fit: BoxFit.cover,
               filterQuality: FilterQuality.low,
             ),
@@ -406,8 +407,8 @@ class GalleryPreviewStrip extends StatelessWidget {
                           ),
                         )
                       else
-                        Image.asset(
-                          images[imageIndex],
+                        CachedAssetImage(
+                          assetPath: images[imageIndex],
                           fit: BoxFit.cover,
                           filterQuality: FilterQuality.low,
                         ),
@@ -475,13 +476,13 @@ class ZoomableGalleryImage extends StatelessWidget {
             child: SizedBox(
               width: constraints.maxWidth,
               height: constraints.maxHeight,
-              child: Image.asset(
-                imagePath,
+              child: CachedAssetImage(
+                assetPath: imagePath,
                 fit: BoxFit.contain,
                 filterQuality: FilterQuality.high,
               ),
             ),
-          ),
+            ),
         );
       },
     );

@@ -1,11 +1,11 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/errors/app_exceptions.dart';
 import '../data/rsvp_supabase_bootstrap.dart';
+import 'admin_guest_control_modal.dart';
 
 enum _AdminAuthMode { login, register }
 
@@ -163,10 +163,11 @@ class _AdminAccessModalState extends State<AdminAccessModal> {
         if (!mounted) {
           return;
         }
-        setState(() {
-          _isSuccess = true;
-          _successMessage = 'Admin access granted. Welcome back.';
-        });
+        Navigator.of(context).pop();
+        Future<void>.microtask(
+          () => showAdminGuestControlModal(widget.hostContext),
+        );
+        return;
       } else {
         final response = await auth.signUp(
           email: _emailController.text.trim(),
@@ -180,8 +181,8 @@ class _AdminAccessModalState extends State<AdminAccessModal> {
         setState(() {
           _isSuccess = true;
           _successMessage = needsEmailConfirmation
-              ? 'Your admin account has been created. Please check your email to confirm it, then log in.'
-              : 'Your admin account has been created and you are now signed in.';
+              ? 'Your admin account has been created. You may use the admin controls after confirming your email. The Admin icon is at the bottom-right corner of the app.'
+              : 'Your admin account has been created. You may now use the admin controls. Tap the Admin icon at the bottom-right corner to open the checklist.';
         });
       }
     } on AuthException catch (error) {

@@ -1,7 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:video_player/video_player.dart';
+
+import 'teaser_video_cache.dart';
 
 class TeaserVideoCard extends StatefulWidget {
   const TeaserVideoCard({
@@ -16,7 +17,7 @@ class TeaserVideoCard extends StatefulWidget {
 }
 
 class _TeaserVideoCardState extends State<TeaserVideoCard> {
-  late final VideoPlayerController _controller;
+  TeaserVideoSession? _session;
   Timer? _controlsHideTimer;
   bool _isMuted = true;
   bool _showControls = true;
@@ -25,15 +26,15 @@ class _TeaserVideoCardState extends State<TeaserVideoCard> {
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.asset(widget.assetPath)
-      ..setLooping(true)
-      ..setVolume(0);
-    _controller.initialize().then((_) {
+    TeaserVideoCache.sessionFor(widget.assetPath).then((session) {
       if (!mounted) {
         return;
       }
-      setState(() {});
-    }).catchError((Object error) {
+      setState(() {
+        _session = session;
+        _isMuted = session.isMuted;
+      });
+    }).catchError((_) {
       if (!mounted) {
         return;
       }
@@ -46,13 +47,14 @@ class _TeaserVideoCardState extends State<TeaserVideoCard> {
   @override
   void dispose() {
     _controlsHideTimer?.cancel();
-    _controller.dispose();
+    _session?.detach();
     super.dispose();
   }
 
   void _scheduleControlsHide() {
     _controlsHideTimer?.cancel();
-    if (!_controller.value.isPlaying) {
+    final session = _session;
+    if (session == null || !session.isPlaying) {
       return;
     }
 
@@ -72,16 +74,51 @@ class _TeaserVideoCardState extends State<TeaserVideoCard> {
         _showControls = true;
       });
     }
-    if (_controller.value.isPlaying) {
+    final session = _session;
+    if (session != null && session.isPlaying) {
       _scheduleControlsHide();
     }
+  }
+
+  void _togglePlay() {
+    final session = _session;
+    if (session == null || !session.isReady || _errorText != null) {
+      return;
+    }
+
+    if (session.isPlaying) {
+      session.pause();
+      _controlsHideTimer?.cancel();
+      setState(() {
+        _showControls = true;
+      });
+    } else {
+      session.play();
+      setState(() {
+        _showControls = true;
+      });
+      _scheduleControlsHide();
+    }
+  }
+
+  void _toggleMute() {
+    final session = _session;
+    if (session == null || !session.isReady || _errorText != null) {
+      return;
+    }
+
+    setState(() {
+      session.toggleMute();
+      _isMuted = session.isMuted;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final isReady = _controller.value.isInitialized;
+    final session = _session;
+    final isReady = session?.isReady ?? false;
 
     if (_errorText != null) {
       return ClipRRect(
@@ -134,13 +171,8 @@ class _TeaserVideoCardState extends State<TeaserVideoCard> {
                   ),
                 ),
               ),
-              if (isReady)
-                Center(
-                  child: AspectRatio(
-                    aspectRatio: _controller.value.aspectRatio,
-                    child: VideoPlayer(_controller),
-                  ),
-                )
+              if (isReady && session != null)
+                Center(child: session.buildSurface())
               else
                 Center(
                   child: Icon(
@@ -156,7 +188,7 @@ class _TeaserVideoCardState extends State<TeaserVideoCard> {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.black.withValues(alpha: 0.05),
+                        Colors.black.withValues(alpha: 0.06),
                         Colors.transparent,
                         Colors.black.withValues(alpha: 0.28),
                       ],
@@ -174,28 +206,11 @@ class _TeaserVideoCardState extends State<TeaserVideoCard> {
                       color: Colors.black.withValues(alpha: 0.28),
                       shape: const CircleBorder(),
                       child: IconButton(
-                        onPressed: () {
-                          if (!isReady) {
-                            return;
-                          }
-                          if (_controller.value.isPlaying) {
-                            _controller.pause();
-                            _controlsHideTimer?.cancel();
-                            setState(() {
-                              _showControls = true;
-                            });
-                          } else {
-                            _controller.play();
-                            setState(() {
-                              _showControls = true;
-                            });
-                            _scheduleControlsHide();
-                          }
-                        },
+                        onPressed: _togglePlay,
                         iconSize: 40,
                         color: Colors.white,
                         icon: Icon(
-                          _controller.value.isPlaying
+                          session?.isPlaying == true
                               ? Icons.pause_rounded
                               : Icons.play_arrow_rounded,
                         ),
@@ -240,19 +255,7 @@ class _TeaserVideoCardState extends State<TeaserVideoCard> {
                           borderRadius: BorderRadius.circular(999),
                           child: InkWell(
                             borderRadius: BorderRadius.circular(999),
-                            onTap: () {
-                              if (!isReady) {
-                                return;
-                              }
-                              setState(() {
-                                _isMuted = !_isMuted;
-                                _controller.setVolume(_isMuted ? 0 : 1);
-                                _showControls = true;
-                              });
-                              if (_controller.value.isPlaying) {
-                                _scheduleControlsHide();
-                              }
-                            },
+                            onTap: _toggleMute,
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 12,
