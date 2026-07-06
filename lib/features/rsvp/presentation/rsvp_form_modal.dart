@@ -186,27 +186,27 @@ class _RsvpFormModalState extends State<RsvpFormModal> {
     });
   }
 
-  void _clearPasscodeErrorIfValid(String value) {
-    if (_passcodeError != null && _validatePasscode(value) == null) {
-      setState(() => _passcodeError = null);
-    }
-    if (_confirmPasscodeError != null &&
-        _validateConfirmPasscode(_confirmPasscodeController.text) == null) {
-      setState(() => _confirmPasscodeError = null);
-    }
-  }
+  // void _clearPasscodeErrorIfValid(String value) {
+  //   if (_passcodeError != null && _validatePasscode(value) == null) {
+  //     setState(() => _passcodeError = null);
+  //   }
+  //   if (_confirmPasscodeError != null &&
+  //       _validateConfirmPasscode(_confirmPasscodeController.text) == null) {
+  //     setState(() => _confirmPasscodeError = null);
+  //   }
+  // }
 
-  void _clearConfirmErrorIfValid(String value) {
-    if (_confirmPasscodeError != null && _validateConfirmPasscode(value) == null) {
-      setState(() => _confirmPasscodeError = null);
-    }
-  }
+  // void _clearConfirmErrorIfValid(String value) {
+  //   if (_confirmPasscodeError != null && _validateConfirmPasscode(value) == null) {
+  //     setState(() => _confirmPasscodeError = null);
+  //   }
+  // }
 
-  void _clearNameErrorIfValid(String value) {
-    if (_nameError != null && _validateName(value) == null) {
-      setState(() => _nameError = null);
-    }
-  }
+  // void _clearNameErrorIfValid(String value) {
+  //   if (_nameError != null && _validateName(value) == null) {
+  //     setState(() => _nameError = null);
+  //   }
+  // }
 
   Future<void> _submit() async {
     if (_isSubmitting) {
