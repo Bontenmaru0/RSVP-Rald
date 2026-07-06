@@ -60,6 +60,7 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
   bool _isLoading = false;
   String? _errorMessage;
   List<AdminGuestRecord> _guests = const [];
+  final Map<String, bool> _editVisibility = <String, bool>{};
 
   @override
   void initState() {
@@ -81,7 +82,7 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
       return null;
     }
     final value = int.tryParse(raw);
-    if (value == null || value < 1 || value > 100) {
+    if (value == null || value < 1 || value > 5) {
       return null;
     }
     return value;
@@ -103,8 +104,9 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
             ? null
             : _nameFilterController.text.trim(),
         guestCount: _guestCountFromFilter(),
-        confirmationStatus:
-            _selectedStatusFilter == 'Any' ? null : _selectedStatusFilter,
+        confirmationStatus: _selectedStatusFilter == 'Any'
+            ? null
+            : _selectedStatusFilter,
       );
 
       if (!mounted) {
@@ -113,6 +115,9 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
 
       setState(() {
         _guests = guests;
+        for (final guest in guests) {
+          _editVisibility.putIfAbsent(guest.passcode, () => false);
+        }
       });
     } on AppException catch (error) {
       if (!mounted) {
@@ -137,6 +142,12 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
         });
       }
     }
+  }
+
+  void _toggleEditControls(String passcode) {
+    setState(() {
+      _editVisibility[passcode] = !(_editVisibility[passcode] ?? false);
+    });
   }
 
   Future<bool> _confirmAction({
@@ -189,7 +200,9 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
                             Text(
                               message,
                               style: theme.textTheme.bodyMedium?.copyWith(
-                                color: colorScheme.onSurface.withValues(alpha: 0.82),
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.82,
+                                ),
                               ),
                             ),
                             const SizedBox(height: 18),
@@ -400,10 +413,7 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
       ),
       filled: true,
       fillColor: colorScheme.surface.withValues(alpha: 0.30),
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 14,
-        vertical: 14,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
         borderSide: BorderSide(
@@ -418,10 +428,7 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(
-          color: colorScheme.primary,
-          width: 1.4,
-        ),
+        borderSide: BorderSide(color: colorScheme.primary, width: 1.4),
       ),
     );
   }
@@ -439,9 +446,9 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
         Text(
           label,
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: colorScheme.onSurface.withValues(alpha: 0.84),
-                fontWeight: FontWeight.w700,
-              ),
+            color: colorScheme.onSurface.withValues(alpha: 0.84),
+            fontWeight: FontWeight.w700,
+          ),
         ),
         const SizedBox(height: 8),
         TextField(
@@ -460,18 +467,26 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
   Widget _buildGuestCard(AdminGuestRecord record) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final mediaWidth = MediaQuery.sizeOf(context).width;
+    final isCompact = mediaWidth < 760;
     final status = record.confirmationStatus.isEmpty
         ? 'ForConfirmation'
         : record.confirmationStatus;
+    final showEditControls = _editVisibility[record.passcode] ?? false;
+
+    Widget labeledDropdown({required String label, required Widget child}) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [_buildControlLabel(label), const SizedBox(height: 8), child],
+      );
+    }
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: colorScheme.surface.withValues(alpha: 0.26),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: colorScheme.primary.withValues(alpha: 0.16),
-        ),
+        border: Border.all(color: colorScheme.primary.withValues(alpha: 0.16)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -517,8 +532,8 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
             spacing: 10,
             runSpacing: 10,
             children: [
-              _buildInfoChip('Guests', record.guestCount.toString()),
-              _buildInfoChip('Status', status),
+              _buildInfoChip('Guest Count', record.guestCount.toString()),
+              _buildInfoChip('Confirmation Status', status),
               if (record.datetimeSentIso8601.isNotEmpty)
                 _buildInfoChip('Sent', _formatDate(record.datetimeSentIso8601)),
               if (record.datetimeUpdatedByAdminIso8601.isNotEmpty)
@@ -529,101 +544,155 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
             ],
           ),
           const SizedBox(height: 14),
-          if (MediaQuery.sizeOf(context).width < 760) ...[
-            DropdownButtonFormField<int>(
-              initialValue: record.guestCount.clamp(1, 100),
-              decoration: _filterDecoration('Guest count'),
-              items: List<DropdownMenuItem<int>>.generate(
-                100,
-                (index) => DropdownMenuItem<int>(
-                  value: index + 1,
-                  child: Text('${index + 1}'),
+          Row(
+            children: [
+              TextButton.icon(
+                onPressed: () => _toggleEditControls(record.passcode),
+                icon: Icon(
+                  showEditControls
+                      ? Icons.expand_less_rounded
+                      : Icons.edit_rounded,
                 ),
+                label: Text(showEditControls ? 'Hide edit' : 'Edit'),
               ),
-              onChanged: (value) {
-                if (value == null) {
-                  return;
-                }
-                _updateGuestCount(record, value);
-              },
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              initialValue: status,
-              decoration: _filterDecoration('Confirmation status'),
-              items: const [
-                DropdownMenuItem(
-                  value: 'ForConfirmation',
-                  child: Text('ForConfirmation'),
+              const Spacer(),
+              if (showEditControls)
+                Text(
+                  'Editing ${record.fullName.isEmpty ? 'guest' : record.fullName}',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: colorScheme.onSurface.withValues(alpha: 0.74),
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-                DropdownMenuItem(
-                  value: 'Confirmed',
-                  child: Text('Confirmed'),
-                ),
-                DropdownMenuItem(
-                  value: 'Declined',
-                  child: Text('Declined'),
-                ),
-              ],
-              onChanged: (value) {
-                if (value == null) {
-                  return;
-                }
-                _updateStatus(record, value);
-              },
-            ),
-          ] else ...[
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<int>(
-                    initialValue: record.guestCount.clamp(1, 100),
-                    decoration: _filterDecoration('Guest count'),
-                    items: List<DropdownMenuItem<int>>.generate(
-                      100,
-                      (index) => DropdownMenuItem<int>(
-                        value: index + 1,
-                        child: Text('${index + 1}'),
-                      ),
+            ],
+          ),
+          AnimatedCrossFade(
+            firstChild: const SizedBox.shrink(),
+            secondChild: Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: isCompact
+                  ? Column(
+                      children: [
+                        labeledDropdown(
+                          label: 'Guest Count',
+                          child: DropdownButtonFormField<int>(
+                            initialValue: record.guestCount.clamp(1, 5).toInt(),
+                            decoration: _filterDecoration('Select guest count'),
+                            items: List<DropdownMenuItem<int>>.generate(
+                              5,
+                              (index) => DropdownMenuItem<int>(
+                                value: index + 1,
+                                child: Text('${index + 1}'),
+                              ),
+                            ),
+                            onChanged: (value) {
+                              if (value == null) {
+                                return;
+                              }
+                              _updateGuestCount(record, value);
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        labeledDropdown(
+                          label: 'Confirmation Status',
+                          child: DropdownButtonFormField<String>(
+                            initialValue: status,
+                            decoration: _filterDecoration(
+                              'Select confirmation status',
+                            ),
+                            items: const [
+                              DropdownMenuItem(
+                                value: 'ForConfirmation',
+                                child: Text('ForConfirmation'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'Confirmed',
+                                child: Text('Confirmed'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'Declined',
+                                child: Text('Declined'),
+                              ),
+                            ],
+                            onChanged: (value) {
+                              if (value == null) {
+                                return;
+                              }
+                              _updateStatus(record, value);
+                            },
+                          ),
+                        ),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        Expanded(
+                          child: labeledDropdown(
+                            label: 'Guest Count',
+                            child: DropdownButtonFormField<int>(
+                              initialValue: record.guestCount
+                                  .clamp(1, 5)
+                                  .toInt(),
+                              decoration: _filterDecoration(
+                                'Select guest count',
+                              ),
+                              items: List<DropdownMenuItem<int>>.generate(
+                                5,
+                                (index) => DropdownMenuItem<int>(
+                                  value: index + 1,
+                                  child: Text('${index + 1}'),
+                                ),
+                              ),
+                              onChanged: (value) {
+                                if (value == null) {
+                                  return;
+                                }
+                                _updateGuestCount(record, value);
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: labeledDropdown(
+                            label: 'Confirmation Status',
+                            child: DropdownButtonFormField<String>(
+                              initialValue: status,
+                              decoration: _filterDecoration(
+                                'Select confirmation status',
+                              ),
+                              items: const [
+                                DropdownMenuItem(
+                                  value: 'ForConfirmation',
+                                  child: Text('ForConfirmation'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'Confirmed',
+                                  child: Text('Confirmed'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'Declined',
+                                  child: Text('Declined'),
+                                ),
+                              ],
+                              onChanged: (value) {
+                                if (value == null) {
+                                  return;
+                                }
+                                _updateStatus(record, value);
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    onChanged: (value) {
-                      if (value == null) {
-                        return;
-                      }
-                      _updateGuestCount(record, value);
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: status,
-                    decoration: _filterDecoration('Confirmation status'),
-                    items: const [
-                      DropdownMenuItem(
-                        value: 'ForConfirmation',
-                        child: Text('ForConfirmation'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'Confirmed',
-                        child: Text('Confirmed'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'Declined',
-                        child: Text('Declined'),
-                      ),
-                    ],
-                    onChanged: (value) {
-                      if (value == null) {
-                        return;
-                      }
-                      _updateStatus(record, value);
-                    },
-                  ),
-                ),
-              ],
             ),
-          ],
+            crossFadeState: showEditControls
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 220),
+          ),
         ],
       ),
     );
@@ -636,16 +705,25 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
       decoration: BoxDecoration(
         color: colorScheme.surface.withValues(alpha: 0.34),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: colorScheme.primary.withValues(alpha: 0.12),
-        ),
+        border: Border.all(color: colorScheme.primary.withValues(alpha: 0.12)),
       ),
       child: Text(
         '$label: $value',
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: colorScheme.onSurface,
-              fontWeight: FontWeight.w600,
-            ),
+          color: colorScheme.onSurface,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildControlLabel(String label) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Text(
+      label,
+      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+        color: colorScheme.onSurface.withValues(alpha: 0.84),
+        fontWeight: FontWeight.w700,
       ),
     );
   }
@@ -703,16 +781,19 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
                                 children: [
                                   Text(
                                     'Admin Guest Controls',
-                                    style: theme.textTheme.headlineSmall?.copyWith(
-                                      color: colorScheme.onSurface,
-                                      fontWeight: FontWeight.w700,
-                                    ),
+                                    style: theme.textTheme.headlineSmall
+                                        ?.copyWith(
+                                          color: colorScheme.onSurface,
+                                          fontWeight: FontWeight.w700,
+                                        ),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
                                     'Search, update, or remove guests. Every action asks for confirmation first.',
                                     style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: colorScheme.onSurface.withValues(alpha: 0.78),
+                                      color: colorScheme.onSurface.withValues(
+                                        alpha: 0.78,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -721,7 +802,9 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
                             Tooltip(
                               message: 'Close',
                               child: Material(
-                                color: colorScheme.surface.withValues(alpha: 0.48),
+                                color: colorScheme.surface.withValues(
+                                  alpha: 0.48,
+                                ),
                                 shape: const CircleBorder(),
                                 child: InkWell(
                                   customBorder: const CircleBorder(),
@@ -762,77 +845,85 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
                           firstChild: const SizedBox.shrink(),
                           secondChild: Padding(
                             padding: const EdgeInsets.only(top: 14),
-                            child: Wrap(
-                              spacing: 12,
-                              runSpacing: 12,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                SizedBox(
-                                  width: 220,
-                                  child: _buildFilterField(
-                                    label: 'Passcode',
-                                    controller: _passcodeFilterController,
-                                    hintText: 'Filter passcode',
+                                _buildFilterField(
+                                  label: 'Passcode',
+                                  controller: _passcodeFilterController,
+                                  hintText: 'Filter passcode',
+                                ),
+                                const SizedBox(height: 12),
+                                _buildFilterField(
+                                  label: 'Name',
+                                  controller: _nameFilterController,
+                                  hintText: 'Filter name',
+                                ),
+                                const SizedBox(height: 12),
+                                _buildFilterField(
+                                  label: 'Guest Count',
+                                  controller: _guestCountFilterController,
+                                  hintText: '1 - 5',
+                                  keyboardType: TextInputType.number,
+                                ),
+                                const SizedBox(height: 12),
+                                _buildControlLabel('Confirmation Status'),
+                                const SizedBox(height: 8),
+                                DropdownButtonFormField<String>(
+                                  initialValue: _selectedStatusFilter,
+                                  decoration: _filterDecoration(
+                                    'Select confirmation status',
                                   ),
+                                  items: _statusFilters
+                                      .map(
+                                        (status) => DropdownMenuItem<String>(
+                                          value: status,
+                                          child: Text(status),
+                                        ),
+                                      )
+                                      .toList(growable: false),
+                                  onChanged: (value) {
+                                    if (value == null) {
+                                      return;
+                                    }
+                                    setState(() {
+                                      _selectedStatusFilter = value;
+                                    });
+                                  },
                                 ),
-                                SizedBox(
-                                  width: 220,
-                                  child: _buildFilterField(
-                                    label: 'Name',
-                                    controller: _nameFilterController,
-                                    hintText: 'Filter name',
-                                  ),
-                                ),
-                                SizedBox(
-                                  width: 180,
-                                  child: _buildFilterField(
-                                    label: 'Guests',
-                                    controller: _guestCountFilterController,
-                                    hintText: '1 - 100',
-                                    keyboardType: TextInputType.number,
-                                  ),
-                                ),
-                                SizedBox(
-                                  width: 220,
-                                  child: DropdownButtonFormField<String>(
-                                    initialValue: _selectedStatusFilter,
-                                    decoration: _filterDecoration('Status filter'),
-                                    items: _statusFilters
-                                        .map(
-                                          (status) => DropdownMenuItem<String>(
-                                            value: status,
-                                            child: Text(status),
-                                          ),
-                                        )
-                                        .toList(growable: false),
-                                    onChanged: (value) {
-                                      if (value == null) {
-                                        return;
-                                      }
-                                      setState(() {
-                                        _selectedStatusFilter = value;
-                                      });
-                                    },
-                                  ),
-                                ),
-                                FilledButton.icon(
-                                  onPressed: _isLoading ? null : _loadGuests,
-                                  icon: const Icon(Icons.search_rounded),
-                                  label: const Text('Apply Filters'),
-                                ),
-                                OutlinedButton.icon(
-                                  onPressed: _isLoading
-                                      ? null
-                                      : () {
-                                          setState(() {
-                                            _passcodeFilterController.clear();
-                                            _nameFilterController.clear();
-                                            _guestCountFilterController.clear();
-                                            _selectedStatusFilter = 'Any';
-                                          });
-                                          _loadGuests();
-                                        },
-                                  icon: const Icon(Icons.refresh_rounded),
-                                  label: const Text('Reset'),
+                                const SizedBox(height: 12),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: FilledButton.icon(
+                                        onPressed: _isLoading
+                                            ? null
+                                            : _loadGuests,
+                                        icon: const Icon(Icons.search_rounded),
+                                        label: const Text('Apply Filters'),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: OutlinedButton.icon(
+                                        onPressed: _isLoading
+                                            ? null
+                                            : () {
+                                                setState(() {
+                                                  _passcodeFilterController
+                                                      .clear();
+                                                  _nameFilterController.clear();
+                                                  _guestCountFilterController
+                                                      .clear();
+                                                  _selectedStatusFilter = 'Any';
+                                                });
+                                                _loadGuests();
+                                              },
+                                        icon: const Icon(Icons.refresh_rounded),
+                                        label: const Text('Reset'),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
@@ -841,6 +932,12 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
                               ? CrossFadeState.showSecond
                               : CrossFadeState.showFirst,
                           duration: const Duration(milliseconds: 220),
+                        ),
+                        const SizedBox(height: 12),
+                        Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: colorScheme.primary.withValues(alpha: 0.14),
                         ),
                         const SizedBox(height: 16),
                         if (_errorMessage != null) ...[
@@ -865,7 +962,9 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
                               'No guest records found.',
                               textAlign: TextAlign.center,
                               style: theme.textTheme.bodyLarge?.copyWith(
-                                color: colorScheme.onSurface.withValues(alpha: 0.72),
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.72,
+                                ),
                               ),
                             ),
                           )
@@ -874,7 +973,8 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
                             itemCount: _guests.length,
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
-                            separatorBuilder: (_, __) => const SizedBox(height: 12),
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 12),
                             itemBuilder: (context, index) {
                               return _buildGuestCard(_guests[index]);
                             },
