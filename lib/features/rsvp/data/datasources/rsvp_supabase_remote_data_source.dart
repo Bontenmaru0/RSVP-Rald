@@ -47,6 +47,7 @@ class RsvpSupabaseRemoteDataSource implements RsvpRemoteDataSource {
     String? confirmationStatus,
     DateTime? datetimeSent,
     DateTime? datetimeUpdatedByAdmin,
+    String sortDirection = 'ASC',
   }) async {
     final client = await _client();
     try {
@@ -60,6 +61,7 @@ class RsvpSupabaseRemoteDataSource implements RsvpRemoteDataSource {
           'p_datetime_sent': datetimeSent?.toIso8601String().split('T').first,
           'p_datetime_updated_by_admin':
               datetimeUpdatedByAdmin?.toIso8601String().split('T').first,
+          'p_sort_direction': sortDirection,
         },
       );
 

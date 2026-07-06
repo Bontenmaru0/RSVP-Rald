@@ -106,7 +106,8 @@ CREATE OR REPLACE FUNCTION admin_get_guests(
     p_guests INTEGER DEFAULT NULL,
     p_confirmation_status VARCHAR(20) DEFAULT NULL,
     p_datetime_sent DATE DEFAULT NULL,
-    p_datetime_updated_by_admin DATE DEFAULT NULL
+    p_datetime_updated_by_admin DATE DEFAULT NULL,
+    p_sort_direction VARCHAR(4) DEFAULT 'ASC'
 )
 RETURNS TABLE (
     id BIGINT,
@@ -117,31 +118,43 @@ RETURNS TABLE (
     datetime_updated_by_admin TIMESTAMPTZ,
     confirmation_status VARCHAR(20)
 )
-LANGUAGE sql
+LANGUAGE plpgsql
 AS $$
-    SELECT
-        i.id,
-        i.passcode,
-        i.name,
-        i.guests,
-        i.datetime_sent,
-        i.datetime_updated_by_admin,
-        i.confirmation_status
-    FROM invitation_passcodes i
-    WHERE
-        (p_passcode IS NULL OR i.passcode ILIKE '%' || trim(p_passcode) || '%')
-    AND (p_name IS NULL OR i.name ILIKE '%' || trim(p_name) || '%')
-    AND (p_guests IS NULL OR i.guests = p_guests)
-    AND (p_confirmation_status IS NULL OR i.confirmation_status = p_confirmation_status)
-    AND (
-        p_datetime_sent IS NULL
-        OR i.datetime_sent::DATE = p_datetime_sent
+BEGIN
+    -- Validate sort direction
+    IF UPPER(p_sort_direction) NOT IN ('ASC', 'DESC') THEN
+        p_sort_direction := 'ASC';
+    END IF;
+
+    RETURN QUERY EXECUTE format(
+        '
+        SELECT
+            i.id,
+            i.passcode,
+            i.name,
+            i.guests,
+            i.datetime_sent,
+            i.datetime_updated_by_admin,
+            i.confirmation_status
+        FROM invitation_passcodes i
+        WHERE
+            ($1 IS NULL OR i.passcode ILIKE ''%%'' || trim($1) || ''%%'')
+        AND ($2 IS NULL OR i.name ILIKE ''%%'' || trim($2) || ''%%'')
+        AND ($3 IS NULL OR i.guests = $3)
+        AND ($4 IS NULL OR i.confirmation_status = $4)
+        AND ($5 IS NULL OR i.datetime_sent::DATE = $5)
+        AND ($6 IS NULL OR i.datetime_updated_by_admin::DATE = $6)
+        ORDER BY i.id %s',
+        UPPER(p_sort_direction)
     )
-    AND (
-        p_datetime_updated_by_admin IS NULL
-        OR i.datetime_updated_by_admin::DATE = p_datetime_updated_by_admin
-    )
-    ORDER BY i.id DESC;
+    USING
+        p_passcode,
+        p_name,
+        p_guests,
+        p_confirmation_status,
+        p_datetime_sent,
+        p_datetime_updated_by_admin;
+END;
 $$;
 
 ------------------------------------------------------------------------------------

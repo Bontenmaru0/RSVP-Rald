@@ -13,6 +13,7 @@ abstract class RsvpRemoteDataSource {
     String? confirmationStatus,
     DateTime? datetimeSent,
     DateTime? datetimeUpdatedByAdmin,
+    String sortDirection,
   });
   Future<String> updateAdminGuestCount({
     required String passcode,

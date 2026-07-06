@@ -55,7 +55,13 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
     'Declined',
   ];
 
+  final List<String> _sortDirectionFilters = const [
+    'ASC',
+    'DESC',
+  ];
+
   String _selectedStatusFilter = 'Any';
+  String _selectedSortDirection = 'ASC';
   bool _showFilters = false;
   bool _isLoading = false;
   String? _errorMessage;
@@ -107,6 +113,7 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
         confirmationStatus: _selectedStatusFilter == 'Any'
             ? null
             : _selectedStatusFilter,
+        sortDirection: _selectedSortDirection,
       );
 
       if (!mounted) {
@@ -147,6 +154,64 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
   void _toggleEditControls(String passcode) {
     setState(() {
       _editVisibility[passcode] = !(_editVisibility[passcode] ?? false);
+    });
+  }
+
+  String _normalizeStatus(String value) {
+    return value.isEmpty ? 'ForConfirmation' : value;
+  }
+
+  bool _matchesCurrentFilters(AdminGuestRecord record) {
+    final passcodeFilter = _passcodeFilterController.text.trim().toLowerCase();
+    final nameFilter = _nameFilterController.text.trim().toLowerCase();
+    final guestCountFilter = _guestCountFromFilter();
+    final selectedStatusFilter = _selectedStatusFilter;
+
+    if (passcodeFilter.isNotEmpty &&
+        !record.passcode.toLowerCase().contains(passcodeFilter)) {
+      return false;
+    }
+
+    if (nameFilter.isNotEmpty &&
+        !record.fullName.toLowerCase().contains(nameFilter)) {
+      return false;
+    }
+
+    if (guestCountFilter != null && record.guestCount != guestCountFilter) {
+      return false;
+    }
+
+    if (selectedStatusFilter != 'Any' &&
+        _normalizeStatus(record.confirmationStatus) != selectedStatusFilter) {
+      return false;
+    }
+
+    return true;
+  }
+
+  void _replaceGuestRecord(AdminGuestRecord updatedRecord) {
+    setState(() {
+      final index = _guests.indexWhere(
+        (guest) => guest.passcode == updatedRecord.passcode,
+      );
+      if (index == -1) {
+        return;
+      }
+
+      if (_matchesCurrentFilters(updatedRecord)) {
+        _guests[index] = updatedRecord;
+      } else {
+        _guests.removeAt(index);
+      }
+
+      _editVisibility.putIfAbsent(updatedRecord.passcode, () => false);
+    });
+  }
+
+  void _removeGuestRecord(String passcode) {
+    setState(() {
+      _guests.removeWhere((guest) => guest.passcode == passcode);
+      _editVisibility.remove(passcode);
     });
   }
 
@@ -300,7 +365,17 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
             ? '${record.fullName.isEmpty ? 'Guest' : record.fullName} guest count has been updated.'
             : message,
       );
-      await _loadGuests();
+      _replaceGuestRecord(
+        AdminGuestRecord(
+          id: record.id,
+          passcode: record.passcode,
+          fullName: record.fullName,
+          guestCount: newCount,
+          confirmationStatus: record.confirmationStatus,
+          datetimeSentIso8601: record.datetimeSentIso8601,
+          datetimeUpdatedByAdminIso8601: DateTime.now().toUtc().toIso8601String(),
+        ),
+      );
     } on AppException catch (error) {
       if (!mounted) {
         return;
@@ -347,7 +422,17 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
             ? '${record.fullName.isEmpty ? 'Guest' : record.fullName} status has been updated.'
             : message,
       );
-      await _loadGuests();
+      _replaceGuestRecord(
+        AdminGuestRecord(
+          id: record.id,
+          passcode: record.passcode,
+          fullName: record.fullName,
+          guestCount: record.guestCount,
+          confirmationStatus: newStatus,
+          datetimeSentIso8601: record.datetimeSentIso8601,
+          datetimeUpdatedByAdminIso8601: DateTime.now().toUtc().toIso8601String(),
+        ),
+      );
     } on AppException catch (error) {
       if (!mounted) {
         return;
@@ -387,7 +472,7 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
             ? '${record.fullName.isEmpty ? 'Guest' : record.fullName} has been deleted.'
             : message,
       );
-      await _loadGuests();
+      _removeGuestRecord(record.passcode);
     } on AppException catch (error) {
       if (!mounted) {
         return;
@@ -888,6 +973,32 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
                                     }
                                     setState(() {
                                       _selectedStatusFilter = value;
+                                    });
+                                  },
+                                ),
+                                const SizedBox(height: 12),
+                                _buildControlLabel('Sort Order'),
+                                const SizedBox(height: 8),
+                                DropdownButtonFormField<String>(
+                                  initialValue: _selectedSortDirection,
+                                  decoration: _filterDecoration(
+                                    'Select sort order',
+                                  ),
+                                  items: _sortDirectionFilters
+                                      .map(
+                                        (direction) =>
+                                            DropdownMenuItem<String>(
+                                          value: direction,
+                                          child: Text(direction),
+                                        ),
+                                      )
+                                      .toList(growable: false),
+                                  onChanged: (value) {
+                                    if (value == null) {
+                                      return;
+                                    }
+                                    setState(() {
+                                      _selectedSortDirection = value;
                                     });
                                   },
                                 ),

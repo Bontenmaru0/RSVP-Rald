@@ -22,6 +22,7 @@ class RsvpRepositoryImpl implements RsvpRepository {
     String? confirmationStatus,
     DateTime? datetimeSent,
     DateTime? datetimeUpdatedByAdmin,
+    String sortDirection = 'ASC',
   }) {
     return safeRemoteCall(
       () => _remoteDataSource.fetchAdminGuests(
@@ -31,6 +32,7 @@ class RsvpRepositoryImpl implements RsvpRepository {
         confirmationStatus: confirmationStatus,
         datetimeSent: datetimeSent,
         datetimeUpdatedByAdmin: datetimeUpdatedByAdmin,
+        sortDirection: sortDirection,
       ),
     );
   }
