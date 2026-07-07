@@ -1,4 +1,4 @@
-import 'dart:ui';
+﻿import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
@@ -26,7 +26,8 @@ class _GalleryTabState extends State<GalleryTab> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final topPadding = screenWidth < 700 ? 148.0 : 20.0;
     return SafeArea(
       child: Align(
         alignment: Alignment.topLeft,
@@ -35,7 +36,7 @@ class _GalleryTabState extends State<GalleryTab> {
           onTap: () => showGalleryModal(context),
           onHorizontalDragEnd: _handleDragEnd,
           child: Padding(
-            padding: const EdgeInsets.only(top: 20),
+            padding: EdgeInsets.only(top: topPadding),
             child: ClipRRect(
               borderRadius: const BorderRadius.horizontal(
                 right: Radius.circular(22),
@@ -103,3 +104,9 @@ class _GalleryTabState extends State<GalleryTab> {
     );
   }
 }
+
+
+
+
+
+
