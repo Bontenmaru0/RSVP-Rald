@@ -612,57 +612,58 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isCompact = constraints.maxWidth < 640;
+              final titleBlock = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Confirmed guests',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: colorScheme.onSurface.withValues(alpha: 0.78),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  if (_isSummaryLoading)
+                    SizedBox(
+                      height: 28,
+                      width: 28,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.4,
+                        color: colorScheme.primary,
+                      ),
+                    )
+                  else if (confirmedGuests != null)
                     Text(
-                      'Confirmed guests',
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        color: colorScheme.onSurface.withValues(alpha: 0.78),
-                        fontWeight: FontWeight.w700,
+                      confirmedGuests.toString(),
+                      style: theme.textTheme.displaySmall?.copyWith(
+                        color: colorScheme.onSurface,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    )
+                  else
+                    Text(
+                      '--',
+                      style: theme.textTheme.displaySmall?.copyWith(
+                        color: colorScheme.onSurface.withValues(alpha: 0.58),
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    if (_isSummaryLoading)
-                      SizedBox(
-                        height: 28,
-                        width: 28,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.4,
-                          color: colorScheme.primary,
-                        ),
-                      )
-                    else if (confirmedGuests != null)
-                      Text(
-                        confirmedGuests.toString(),
-                        style: theme.textTheme.displaySmall?.copyWith(
-                          color: colorScheme.onSurface,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      )
-                    else
-                      Text(
-                        '--',
-                        style: theme.textTheme.displaySmall?.copyWith(
-                          color: colorScheme.onSurface.withValues(alpha: 0.58),
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _isSummaryLoading ? 'Loading dashboard summary...' : 'Tap see all data for the full dashboard breakdown.',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurface.withValues(alpha: 0.72),
-                      ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _isSummaryLoading
+                        ? 'Loading dashboard summary...'
+                        : 'Tap see all data for the full dashboard breakdown.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurface.withValues(alpha: 0.72),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              TextButton.icon(
+                  ),
+                ],
+              );
+
+              final actionButton = TextButton.icon(
                 onPressed: hasSummary && !_isSummaryLoading
                     ? () {
                         setState(() {
@@ -676,8 +677,27 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
                       : Icons.visibility_rounded,
                 ),
                 label: Text(_showDashboardDetails ? 'Show less' : 'See all data'),
-              ),
-            ],
+              );
+
+              if (isCompact) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    titleBlock,
+                    const SizedBox(height: 12),
+                    Align(alignment: Alignment.centerLeft, child: actionButton),
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(child: titleBlock),
+                  const SizedBox(width: 12),
+                  actionButton,
+                ],
+              );
+            },
           ),
           if (_summaryErrorMessage != null) ...[
             const SizedBox(height: 10),
@@ -695,23 +715,27 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
                 ? const SizedBox.shrink()
                 : Padding(
                     padding: const EdgeInsets.only(top: 14),
-                    child: Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        _buildDashboardStatCard('Total invitations', summary.totalInvitations),
-                        _buildDashboardStatCard('Confirmed invitations', summary.confirmedInvitations),
-                        _buildDashboardStatCard('Declined invitations', summary.declinedInvitations),
-                        _buildDashboardStatCard(
-                          'For confirmation invitations',
-                          summary.forConfirmationInvitations,
+                        _buildDashboardGroupCard(
+                          title: 'Invitations',
+                          items: [
+                            ('Total', summary.totalInvitations),
+                            ('Confirmed', summary.confirmedInvitations),
+                            ('Declined', summary.declinedInvitations),
+                            ('Pending', summary.forConfirmationInvitations),
+                          ],
                         ),
-                        _buildDashboardStatCard('Total guests', summary.totalGuests),
-                        _buildDashboardStatCard('Confirmed guests', summary.confirmedGuests),
-                        _buildDashboardStatCard('Declined guests', summary.declinedGuests),
-                        _buildDashboardStatCard(
-                          'For confirmation guests',
-                          summary.forConfirmationGuests,
+                        const SizedBox(height: 12),
+                        _buildDashboardGroupCard(
+                          title: 'Guests',
+                          items: [
+                            ('Total', summary.totalGuests),
+                            ('Confirmed', summary.confirmedGuests),
+                            ('Declined', summary.declinedGuests),
+                            ('Pending', summary.forConfirmationGuests),
+                          ],
                         ),
                       ],
                     ),
@@ -726,14 +750,115 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
     );
   }
 
-  Widget _buildDashboardStatCard(String label, int value) {
+  Widget _buildDashboardGroupCard({
+    required String title,
+    required List<(String, int)> items,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final groupCompact = MediaQuery.sizeOf(context).width < 640;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colorScheme.surface.withValues(alpha: 0.30),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: colorScheme.primary.withValues(alpha: 0.12)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            title,
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.3,
+            ),
+          ),
+          const SizedBox(height: 10),
+          if (groupCompact)
+            Column(
+              children: items
+                  .map(
+                    (item) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: _buildDashboardMetricRow(
+                        label: item.$1,
+                        value: item.$2,
+                      ),
+                    ),
+                  )
+                  .toList(growable: false),
+            )
+          else
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: items
+                  .map(
+                    (item) => _buildDashboardMetricPill(
+                      label: item.$1,
+                      value: item.$2,
+                    ),
+                  )
+                  .toList(growable: false),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDashboardMetricRow({
+    required String label,
+    required int value,
+  }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     return Container(
-      constraints: const BoxConstraints(minWidth: 170),
+      width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: colorScheme.surface.withValues(alpha: 0.34),
+        color: colorScheme.surface.withValues(alpha: 0.36),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.primary.withValues(alpha: 0.12)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: colorScheme.onSurface.withValues(alpha: 0.72),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            value.toString(),
+            style: theme.textTheme.titleLarge?.copyWith(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDashboardMetricPill({
+    required String label,
+    required int value,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Container(
+      constraints: const BoxConstraints(minWidth: 96),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: colorScheme.surface.withValues(alpha: 0.36),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: colorScheme.primary.withValues(alpha: 0.12)),
       ),
@@ -1375,6 +1500,19 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
     );
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
