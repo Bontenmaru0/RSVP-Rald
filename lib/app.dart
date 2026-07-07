@@ -12,7 +12,7 @@ class WeddingRsvpApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Gerald and Mervielynn RSVP',
+      title: 'G&M Invitation',
       theme: AppTheme.light(),
       scrollBehavior: const MaterialScrollBehavior().copyWith(
         dragDevices: {
@@ -27,3 +27,4 @@ class WeddingRsvpApp extends StatelessWidget {
     );
   }
 }
+
