@@ -1,5 +1,6 @@
-import '../../../../core/network/safe_remote_call.dart';
+﻿import '../../../../core/network/safe_remote_call.dart';
 import '../../domain/entities/admin_guest_record.dart';
+import '../../domain/entities/rsvp_dashboard_summary.dart';
 import '../../domain/entities/rsvp_submission.dart';
 import '../../domain/repositories/rsvp_repository.dart';
 import '../datasources/rsvp_remote_data_source.dart';
@@ -35,6 +36,11 @@ class RsvpRepositoryImpl implements RsvpRepository {
         sortDirection: sortDirection,
       ),
     );
+  }
+
+  @override
+  Future<RsvpDashboardSummary> fetchAdminDashboardSummary() {
+    return safeRemoteCall(_remoteDataSource.fetchAdminDashboardSummary);
   }
 
   @override

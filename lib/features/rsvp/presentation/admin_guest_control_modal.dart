@@ -1,4 +1,4 @@
-import 'dart:ui';
+﻿import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,6 +7,7 @@ import '../../../core/errors/app_exceptions.dart';
 import '../../../core/utils/app_snackbar.dart';
 import '../data/rsvp_repository_factory.dart';
 import '../domain/entities/admin_guest_record.dart';
+import '../domain/entities/rsvp_dashboard_summary.dart';
 
 Future<void> showAdminGuestControlModal(BuildContext context) {
   return showGeneralDialog(
@@ -69,11 +70,16 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
   String? _errorMessage;
   List<AdminGuestRecord> _guests = const [];
   final Map<String, bool> _editVisibility = <String, bool>{};
+  RsvpDashboardSummary? _dashboardSummary;
+  bool _isSummaryLoading = false;
+  String? _summaryErrorMessage;
+  bool _showDashboardDetails = false;
 
   @override
   void initState() {
     super.initState();
     _loadGuests();
+    _loadDashboardSummary();
   }
 
   @override
@@ -140,6 +146,48 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
     }
   }
 
+  Future<void> _loadDashboardSummary() async {
+    setState(() {
+      _isSummaryLoading = true;
+      _summaryErrorMessage = null;
+    });
+
+    try {
+      final repository = createRsvpRepository();
+      final summary = await repository.fetchAdminDashboardSummary();
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _dashboardSummary = summary;
+      });
+    } on AppException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _summaryErrorMessage = error.message;
+        _dashboardSummary = null;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _summaryErrorMessage = 'We could not load the dashboard summary right now.';
+        _dashboardSummary = null;
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSummaryLoading = false;
+        });
+      }
+    }
+  }
+
   void _toggleEditControls(String passcode) {
     setState(() {
       _editVisibility[passcode] = !(_editVisibility[passcode] ?? false);
@@ -195,6 +243,7 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
 
       _editVisibility.putIfAbsent(updatedRecord.passcode, () => false);
     });
+    _loadDashboardSummary();
   }
 
   void _removeGuestRecord(String passcode) {
@@ -202,6 +251,7 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
       _guests.removeWhere((guest) => guest.passcode == passcode);
       _editVisibility.remove(passcode);
     });
+    _loadDashboardSummary();
   }
 
   Future<bool> _confirmAction({
@@ -535,6 +585,179 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
           decoration: _filterDecoration(hintText),
         ),
       ],
+    );
+  }
+
+  Widget _buildDashboardSummarySection() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final summary = _dashboardSummary;
+    final hasSummary = summary != null;
+    final confirmedGuests = summary?.confirmedGuests;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            colorScheme.primary.withValues(alpha: 0.10),
+            colorScheme.surface.withValues(alpha: 0.38),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: colorScheme.primary.withValues(alpha: 0.16)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Confirmed guests',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: colorScheme.onSurface.withValues(alpha: 0.78),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    if (_isSummaryLoading)
+                      SizedBox(
+                        height: 28,
+                        width: 28,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.4,
+                          color: colorScheme.primary,
+                        ),
+                      )
+                    else if (confirmedGuests != null)
+                      Text(
+                        confirmedGuests.toString(),
+                        style: theme.textTheme.displaySmall?.copyWith(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      )
+                    else
+                      Text(
+                        '--',
+                        style: theme.textTheme.displaySmall?.copyWith(
+                          color: colorScheme.onSurface.withValues(alpha: 0.58),
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _isSummaryLoading ? 'Loading dashboard summary...' : 'Tap see all data for the full dashboard breakdown.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurface.withValues(alpha: 0.72),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              TextButton.icon(
+                onPressed: hasSummary && !_isSummaryLoading
+                    ? () {
+                        setState(() {
+                          _showDashboardDetails = !_showDashboardDetails;
+                        });
+                      }
+                    : null,
+                icon: Icon(
+                  _showDashboardDetails
+                      ? Icons.expand_less_rounded
+                      : Icons.visibility_rounded,
+                ),
+                label: Text(_showDashboardDetails ? 'Show less' : 'See all data'),
+              ),
+            ],
+          ),
+          if (_summaryErrorMessage != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              _summaryErrorMessage!,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: colorScheme.error,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+          AnimatedCrossFade(
+            firstChild: const SizedBox.shrink(),
+            secondChild: summary == null
+                ? const SizedBox.shrink()
+                : Padding(
+                    padding: const EdgeInsets.only(top: 14),
+                    child: Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        _buildDashboardStatCard('Total invitations', summary.totalInvitations),
+                        _buildDashboardStatCard('Confirmed invitations', summary.confirmedInvitations),
+                        _buildDashboardStatCard('Declined invitations', summary.declinedInvitations),
+                        _buildDashboardStatCard(
+                          'For confirmation invitations',
+                          summary.forConfirmationInvitations,
+                        ),
+                        _buildDashboardStatCard('Total guests', summary.totalGuests),
+                        _buildDashboardStatCard('Confirmed guests', summary.confirmedGuests),
+                        _buildDashboardStatCard('Declined guests', summary.declinedGuests),
+                        _buildDashboardStatCard(
+                          'For confirmation guests',
+                          summary.forConfirmationGuests,
+                        ),
+                      ],
+                    ),
+                  ),
+            crossFadeState: _showDashboardDetails && hasSummary
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 220),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDashboardStatCard(String label, int value) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Container(
+      constraints: const BoxConstraints(minWidth: 170),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: colorScheme.surface.withValues(alpha: 0.34),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.primary.withValues(alpha: 0.12)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: colorScheme.onSurface.withValues(alpha: 0.72),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value.toString(),
+            style: theme.textTheme.titleLarge?.copyWith(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -902,6 +1125,11 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
                         thickness: 1,
                         color: colorScheme.primary.withValues(alpha: 0.14),
                       ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
+                        child: _buildDashboardSummarySection(),
+                      ),
+                      const SizedBox(height: 12),
                       Expanded(
                         child: SingleChildScrollView(
                           padding: const EdgeInsets.all(20),
@@ -1147,3 +1375,11 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
     );
   }
 }
+
+
+
+
+
+
+
+

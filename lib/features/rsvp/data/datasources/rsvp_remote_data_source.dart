@@ -1,5 +1,6 @@
-import '../../domain/entities/rsvp_submission.dart';
+﻿import '../../domain/entities/rsvp_submission.dart';
 import '../../domain/entities/admin_guest_record.dart';
+import '../../domain/entities/rsvp_dashboard_summary.dart';
 
 abstract class RsvpRemoteDataSource {
   Future<void> submitResponse(RsvpSubmission submission);
@@ -15,6 +16,7 @@ abstract class RsvpRemoteDataSource {
     DateTime? datetimeUpdatedByAdmin,
     String sortDirection,
   });
+  Future<RsvpDashboardSummary> fetchAdminDashboardSummary();
   Future<String> updateAdminGuestCount({
     required String passcode,
     required int guestCount,

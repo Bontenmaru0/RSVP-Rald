@@ -1,7 +1,8 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+﻿import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/errors/app_exceptions.dart';
 import '../../domain/entities/admin_guest_record.dart';
+import '../../domain/entities/rsvp_dashboard_summary.dart';
 import '../../domain/entities/rsvp_submission.dart';
 import '../rsvp_supabase_bootstrap.dart';
 import 'rsvp_remote_data_source.dart';
@@ -12,12 +13,14 @@ class RsvpSupabaseRemoteDataSource implements RsvpRemoteDataSource {
     this.rpcName = 'insert_invitation_passcode',
     this.statusRpcName = 'get_invitation_by_passcode',
     this.adminStatusRpcName = 'is_admin_passcode',
+    this.dashboardSummaryRpcName = 'admin_get_dashboard_summary',
   });
 
   final String tableName;
   final String rpcName;
   final String statusRpcName;
   final String adminStatusRpcName;
+  final String dashboardSummaryRpcName;
 
   Future<SupabaseClient> _client() async {
     final initialized = await RsvpSupabaseBootstrap.ensureInitialized();
@@ -70,6 +73,29 @@ class RsvpSupabaseRemoteDataSource implements RsvpRemoteDataSource {
             .whereType<Map<String, dynamic>>()
             .map(_toAdminGuestRecord)
             .toList(growable: false);
+      }
+
+      throw const InvalidRemoteResponseException();
+    } on PostgrestException catch (error) {
+      throw AppException(error.message);
+    }
+  }
+
+  @override
+  Future<RsvpDashboardSummary> fetchAdminDashboardSummary() async {
+    final client = await _client();
+    try {
+      final response = await client.rpc(dashboardSummaryRpcName);
+
+      if (response is Map<String, dynamic>) {
+        return _toDashboardSummary(response);
+      }
+
+      if (response is List && response.isNotEmpty) {
+        final first = response.first;
+        if (first is Map<String, dynamic>) {
+          return _toDashboardSummary(first);
+        }
       }
 
       throw const InvalidRemoteResponseException();
@@ -231,6 +257,24 @@ class RsvpSupabaseRemoteDataSource implements RsvpRemoteDataSource {
       datetimeSentIso8601: row['datetime_sent']?.toString() ?? '',
       datetimeUpdatedByAdminIso8601:
           row['datetime_updated_by_admin']?.toString() ?? '',
+    );
+  }
+
+  RsvpDashboardSummary _toDashboardSummary(Map<String, dynamic> row) {
+    int parseCount(String key) {
+      final value = row[key];
+      return value is int ? value : int.tryParse(value?.toString() ?? '') ?? 0;
+    }
+
+    return RsvpDashboardSummary(
+      totalInvitations: parseCount('total_invitations'),
+      confirmedInvitations: parseCount('confirmed_invitations'),
+      declinedInvitations: parseCount('declined_invitations'),
+      forConfirmationInvitations: parseCount('for_confirmation_invitations'),
+      totalGuests: parseCount('total_guests'),
+      confirmedGuests: parseCount('confirmed_guests'),
+      declinedGuests: parseCount('declined_guests'),
+      forConfirmationGuests: parseCount('for_confirmation_guests'),
     );
   }
 }
