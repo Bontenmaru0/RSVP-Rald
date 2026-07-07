@@ -367,13 +367,14 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
       return value;
     }
     final local = parsed.toLocal();
+    final hour = local.hour % 12 == 0 ? 12 : local.hour % 12;
+    final amPm = local.hour >= 12 ? 'pm' : 'am';
     return '${local.year.toString().padLeft(4, '0')}-'
         '${local.month.toString().padLeft(2, '0')}-'
-        '${local.day.toString().padLeft(2, '0')} '
-        '${local.hour.toString().padLeft(2, '0')}:'
-        '${local.minute.toString().padLeft(2, '0')}';
+        '${local.day.toString().padLeft(2, '0')} | '
+        '${hour.toString().padLeft(2, '0')}:'
+        '${local.minute.toString().padLeft(2, '0')} $amPm';
   }
-
   Future<void> _updateGuestCount(AdminGuestRecord record, int newCount) async {
     if (newCount == record.guestCount) {
       return;
@@ -929,7 +930,7 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Passcode ${record.passcode}',
+                      record.passcode,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onSurface.withValues(alpha: 0.74),
                       ),
@@ -955,7 +956,7 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
             runSpacing: 10,
             children: [
               _buildInfoChip('Guest Count', record.guestCount.toString()),
-              _buildInfoChip('Confirmation Status', status),
+              _buildInfoChip('Status', status),
               if (record.datetimeSentIso8601.isNotEmpty)
                 _buildInfoChip('Sent', _formatDate(record.datetimeSentIso8601)),
               if (record.datetimeUpdatedByAdminIso8601.isNotEmpty)
@@ -1507,3 +1508,14 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
     );
   }
 }
+
+
+
+
+
+
+
+
+
+
+
