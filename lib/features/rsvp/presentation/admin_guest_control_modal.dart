@@ -564,7 +564,7 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
   Color _dropdownSurfaceColor() {
     final colorScheme = Theme.of(context).colorScheme;
     return Color.alphaBlend(
-      Colors.white.withValues(alpha: 0.08),
+      Colors.white.withValues(alpha: 0.04),
       colorScheme.surface,
     );
   }
@@ -572,7 +572,7 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
   Color _dropdownMenuColor() {
     final colorScheme = Theme.of(context).colorScheme;
     return Color.alphaBlend(
-      Colors.white.withValues(alpha: 0.12),
+      Colors.white.withValues(alpha: 0.08),
       colorScheme.surface,
     );
   }
@@ -583,7 +583,7 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
     return InputDecoration(
       hintText: hintText,
       hintStyle: TextStyle(
-        color: colorScheme.onSurface.withValues(alpha: 0.68),
+        color: colorScheme.onSurface.withValues(alpha: 0.62),
       ),
       filled: true,
       fillColor: _dropdownSurfaceColor(),
@@ -592,19 +592,45 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
         borderSide: BorderSide(
-          color: colorScheme.primary.withValues(alpha: 0.24),
+          color: colorScheme.primary.withValues(alpha: 0.18),
         ),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
         borderSide: BorderSide(
-          color: colorScheme.primary.withValues(alpha: 0.24),
+          color: colorScheme.primary.withValues(alpha: 0.18),
         ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
-        borderSide: BorderSide(color: colorScheme.primary, width: 1.6),
+        borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
       ),
+    );
+  }
+
+  List<Widget> _selectedTextDropdownItems(Iterable<String> labels) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return labels
+        .map(
+          (label) => Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.primary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  List<Widget> _selectedCountDropdownItems(int count) {
+    return _selectedTextDropdownItems(
+      List<String>.generate(count, (index) => '${index + 1}'),
     );
   }
 
@@ -1078,6 +1104,8 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
                             ),
 
                             menuMaxHeight: 280,
+                            selectedItemBuilder: (context) =>
+                                _selectedCountDropdownItems(5),
                             items: List<DropdownMenuItem<int>>.generate(
                               5,
                               (index) => DropdownMenuItem<int>(
@@ -1127,6 +1155,12 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
                             ),
 
                             menuMaxHeight: 280,
+                            selectedItemBuilder: (context) =>
+                                _selectedTextDropdownItems(const [
+                                  'ForConfirmation',
+                                  'Confirmed',
+                                  'Declined',
+                                ]),
                             items: const [
                               DropdownMenuItem(
                                 value: 'ForConfirmation',
@@ -1188,6 +1222,8 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
                               ),
 
                               menuMaxHeight: 280,
+                              selectedItemBuilder: (context) =>
+                                  _selectedCountDropdownItems(5),
                               items: List<DropdownMenuItem<int>>.generate(
                                 5,
                                 (index) => DropdownMenuItem<int>(
@@ -1238,6 +1274,12 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
                               ),
 
                               menuMaxHeight: 280,
+                              selectedItemBuilder: (context) =>
+                                  _selectedTextDropdownItems(const [
+                                    'ForConfirmation',
+                                    'Confirmed',
+                                    'Declined',
+                                  ]),
                               items: const [
                                 DropdownMenuItem(
                                   value: 'ForConfirmation',
@@ -1438,6 +1480,15 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
                     ),
 
                     menuMaxHeight: 280,
+                    selectedItemBuilder: (context) =>
+                        _selectedTextDropdownItems(const [
+                          'Any',
+                          '1',
+                          '2',
+                          '3',
+                          '4',
+                          '5',
+                        ]),
                     items: [
                       const DropdownMenuItem<int?>(
                         value: null,
@@ -1488,6 +1539,8 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
                     ),
 
                     menuMaxHeight: 280,
+                    selectedItemBuilder: (context) =>
+                        _selectedTextDropdownItems(_statusFilters),
                     items: _statusFilters
                         .map(
                           (status) => DropdownMenuItem<String>(
@@ -1535,6 +1588,8 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
                     ),
 
                     menuMaxHeight: 280,
+                    selectedItemBuilder: (context) =>
+                        _selectedTextDropdownItems(_sortDirectionFilters),
                     items: _sortDirectionFilters
                         .map(
                           (direction) => DropdownMenuItem<String>(
