@@ -46,7 +46,6 @@ class AdminGuestControlModal extends StatefulWidget {
 class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
   final _passcodeFilterController = TextEditingController();
   final _nameFilterController = TextEditingController();
-  final _guestCountFilterController = TextEditingController();
 
   final List<String> _statusFilters = const [
     'Any',
@@ -60,8 +59,11 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
     'DESC',
   ];
 
+  final List<int> _guestCountFilters = const [1, 2, 3, 4, 5];
+
   String _selectedStatusFilter = 'Any';
   String _selectedSortDirection = 'ASC';
+  int? _selectedGuestCountFilter;
   bool _showFilters = false;
   bool _isLoading = false;
   String? _errorMessage;
@@ -78,20 +80,7 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
   void dispose() {
     _passcodeFilterController.dispose();
     _nameFilterController.dispose();
-    _guestCountFilterController.dispose();
     super.dispose();
-  }
-
-  int? _guestCountFromFilter() {
-    final raw = _guestCountFilterController.text.trim();
-    if (raw.isEmpty) {
-      return null;
-    }
-    final value = int.tryParse(raw);
-    if (value == null || value < 1 || value > 5) {
-      return null;
-    }
-    return value;
   }
 
   Future<void> _loadGuests() async {
@@ -109,7 +98,7 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
         name: _nameFilterController.text.trim().isEmpty
             ? null
             : _nameFilterController.text.trim(),
-        guestCount: _guestCountFromFilter(),
+        guestCount: _selectedGuestCountFilter,
         confirmationStatus: _selectedStatusFilter == 'Any'
             ? null
             : _selectedStatusFilter,
@@ -164,7 +153,7 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
   bool _matchesCurrentFilters(AdminGuestRecord record) {
     final passcodeFilter = _passcodeFilterController.text.trim().toLowerCase();
     final nameFilter = _nameFilterController.text.trim().toLowerCase();
-    final guestCountFilter = _guestCountFromFilter();
+    final guestCountFilter = _selectedGuestCountFilter;
     final selectedStatusFilter = _selectedStatusFilter;
 
     if (passcodeFilter.isNotEmpty &&
@@ -853,12 +842,12 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
                       ),
                     ],
                   ),
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 14),
+                        child: Row(
                           children: [
                             Expanded(
                               child: Column(
@@ -907,191 +896,247 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 18),
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: TextButton.icon(
-                            onPressed: () {
-                              setState(() {
-                                _showFilters = !_showFilters;
-                              });
-                            },
-                            icon: Icon(
-                              _showFilters
-                                  ? Icons.expand_less_rounded
-                                  : Icons.tune_rounded,
-                            ),
-                            label: Text(
-                              _showFilters ? 'Hide filters' : 'Show filters',
-                            ),
-                          ),
-                        ),
-                        AnimatedCrossFade(
-                          firstChild: const SizedBox.shrink(),
-                          secondChild: Padding(
-                            padding: const EdgeInsets.only(top: 14),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                _buildFilterField(
-                                  label: 'Passcode',
-                                  controller: _passcodeFilterController,
-                                  hintText: 'Filter passcode',
-                                ),
-                                const SizedBox(height: 12),
-                                _buildFilterField(
-                                  label: 'Name',
-                                  controller: _nameFilterController,
-                                  hintText: 'Filter name',
-                                ),
-                                const SizedBox(height: 12),
-                                _buildFilterField(
-                                  label: 'Guest Count',
-                                  controller: _guestCountFilterController,
-                                  hintText: '1 - 5',
-                                  keyboardType: TextInputType.number,
-                                ),
-                                const SizedBox(height: 12),
-                                _buildControlLabel('Confirmation Status'),
-                                const SizedBox(height: 8),
-                                DropdownButtonFormField<String>(
-                                  initialValue: _selectedStatusFilter,
-                                  decoration: _filterDecoration(
-                                    'Select confirmation status',
-                                  ),
-                                  items: _statusFilters
-                                      .map(
-                                        (status) => DropdownMenuItem<String>(
-                                          value: status,
-                                          child: Text(status),
-                                        ),
-                                      )
-                                      .toList(growable: false),
-                                  onChanged: (value) {
-                                    if (value == null) {
-                                      return;
-                                    }
+                      ),
+                      Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: colorScheme.primary.withValues(alpha: 0.14),
+                      ),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: TextButton.icon(
+                                  onPressed: () {
                                     setState(() {
-                                      _selectedStatusFilter = value;
+                                      _showFilters = !_showFilters;
                                     });
                                   },
-                                ),
-                                const SizedBox(height: 12),
-                                _buildControlLabel('Sort Order'),
-                                const SizedBox(height: 8),
-                                DropdownButtonFormField<String>(
-                                  initialValue: _selectedSortDirection,
-                                  decoration: _filterDecoration(
-                                    'Select sort order',
+                                  icon: Icon(
+                                    _showFilters
+                                        ? Icons.expand_less_rounded
+                                        : Icons.tune_rounded,
                                   ),
-                                  items: _sortDirectionFilters
-                                      .map(
-                                        (direction) =>
-                                            DropdownMenuItem<String>(
-                                          value: direction,
-                                          child: Text(direction),
-                                        ),
-                                      )
-                                      .toList(growable: false),
-                                  onChanged: (value) {
-                                    if (value == null) {
-                                      return;
-                                    }
-                                    setState(() {
-                                      _selectedSortDirection = value;
-                                    });
-                                  },
-                                ),
-                                const SizedBox(height: 12),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: FilledButton.icon(
-                                        onPressed: _isLoading
-                                            ? null
-                                            : _loadGuests,
-                                        icon: const Icon(Icons.search_rounded),
-                                        label: const Text('Apply Filters'),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: OutlinedButton.icon(
-                                        onPressed: _isLoading
-                                            ? null
-                                            : () {
-                                                setState(() {
-                                                  _passcodeFilterController
-                                                      .clear();
-                                                  _nameFilterController.clear();
-                                                  _guestCountFilterController
-                                                      .clear();
-                                                  _selectedStatusFilter = 'Any';
-                                                });
-                                                _loadGuests();
-                                              },
-                                        icon: const Icon(Icons.refresh_rounded),
-                                        label: const Text('Reset'),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                          crossFadeState: _showFilters
-                              ? CrossFadeState.showSecond
-                              : CrossFadeState.showFirst,
-                          duration: const Duration(milliseconds: 220),
-                        ),
-                        const SizedBox(height: 12),
-                        Divider(
-                          height: 1,
-                          thickness: 1,
-                          color: colorScheme.primary.withValues(alpha: 0.14),
-                        ),
-                        const SizedBox(height: 16),
-                        if (_errorMessage != null) ...[
-                          Text(
-                            _errorMessage!,
-                            style: theme.textTheme.labelLarge?.copyWith(
-                              color: colorScheme.error,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                        ],
-                        if (_isLoading)
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 40),
-                            child: Center(child: CircularProgressIndicator()),
-                          )
-                        else if (_guests.isEmpty)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 40),
-                            child: Text(
-                              'No guest records found.',
-                              textAlign: TextAlign.center,
-                              style: theme.textTheme.bodyLarge?.copyWith(
-                                color: colorScheme.onSurface.withValues(
-                                  alpha: 0.72,
+                                  label: Text(
+                                    _showFilters
+                                        ? 'Hide filters'
+                                        : 'Show filters',
+                                  ),
                                 ),
                               ),
-                            ),
-                          )
-                        else
-                          ListView.separated(
-                            itemCount: _guests.length,
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            separatorBuilder: (_, __) =>
+                              AnimatedCrossFade(
+                                firstChild: const SizedBox.shrink(),
+                                secondChild: Padding(
+                                  padding: const EdgeInsets.only(top: 14),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      _buildFilterField(
+                                        label: 'Passcode',
+                                        controller: _passcodeFilterController,
+                                        hintText: 'Filter passcode',
+                                      ),
+                                      const SizedBox(height: 12),
+                                      _buildFilterField(
+                                        label: 'Name',
+                                        controller: _nameFilterController,
+                                        hintText: 'Filter name',
+                                      ),
+                                      const SizedBox(height: 12),
+                                      _buildControlLabel('Guest Count'),
+                                      const SizedBox(height: 8),
+                                      DropdownButtonFormField<int?>(
+                                        initialValue:
+                                            _selectedGuestCountFilter,
+                                        decoration: _filterDecoration(
+                                          'Select guest count',
+                                        ),
+                                        items: [
+                                          const DropdownMenuItem<int?>(
+                                            value: null,
+                                            child: Text('Any'),
+                                          ),
+                                          ..._guestCountFilters.map(
+                                            (count) =>
+                                                DropdownMenuItem<int?>(
+                                              value: count,
+                                              child: Text('$count'),
+                                            ),
+                                          ),
+                                        ],
+                                        onChanged: (value) {
+                                          setState(() {
+                                            _selectedGuestCountFilter = value;
+                                          });
+                                        },
+                                      ),
+                                      const SizedBox(height: 12),
+                                      _buildControlLabel('Confirmation Status'),
+                                      const SizedBox(height: 8),
+                                      DropdownButtonFormField<String>(
+                                        initialValue: _selectedStatusFilter,
+                                        decoration: _filterDecoration(
+                                          'Select confirmation status',
+                                        ),
+                                        items: _statusFilters
+                                            .map(
+                                              (status) =>
+                                                  DropdownMenuItem<String>(
+                                                value: status,
+                                                child: Text(status),
+                                              ),
+                                            )
+                                            .toList(growable: false),
+                                        onChanged: (value) {
+                                          if (value == null) {
+                                            return;
+                                          }
+                                          setState(() {
+                                            _selectedStatusFilter = value;
+                                          });
+                                        },
+                                      ),
+                                      const SizedBox(height: 12),
+                                      _buildControlLabel('Sort Order'),
+                                      const SizedBox(height: 8),
+                                      DropdownButtonFormField<String>(
+                                        initialValue: _selectedSortDirection,
+                                        decoration: _filterDecoration(
+                                          'Select sort order',
+                                        ),
+                                        items: _sortDirectionFilters
+                                            .map(
+                                              (direction) =>
+                                                  DropdownMenuItem<String>(
+                                                value: direction,
+                                                child: Text(direction),
+                                              ),
+                                            )
+                                            .toList(growable: false),
+                                        onChanged: (value) {
+                                          if (value == null) {
+                                            return;
+                                          }
+                                          setState(() {
+                                            _selectedSortDirection = value;
+                                          });
+                                        },
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: FilledButton.icon(
+                                              onPressed: _isLoading
+                                                  ? null
+                                                  : _loadGuests,
+                                              icon: const Icon(
+                                                Icons.search_rounded,
+                                              ),
+                                              label: const Text(
+                                                'Apply Filters',
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: OutlinedButton.icon(
+                                              onPressed: _isLoading
+                                                  ? null
+                                                  : () {
+                                                      setState(() {
+                                                        _passcodeFilterController
+                                                            .clear();
+                                                        _nameFilterController
+                                                            .clear();
+                                                        _selectedStatusFilter =
+                                                            'Any';
+                                                        _selectedGuestCountFilter =
+                                                            null;
+                                                      });
+                                                      _loadGuests();
+                                                    },
+                                              icon: const Icon(
+                                                Icons.refresh_rounded,
+                                              ),
+                                              label: const Text('Reset'),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                crossFadeState: _showFilters
+                                    ? CrossFadeState.showSecond
+                                    : CrossFadeState.showFirst,
+                                duration: const Duration(milliseconds: 220),
+                              ),
+                              const SizedBox(height: 12),
+                              if (_showFilters)
+                                Divider(
+                                  height: 1,
+                                  thickness: 1,
+                                  color: colorScheme.primary.withValues(
+                                    alpha: 0.14,
+                                  ),
+                                ),
+                              if (_showFilters) const SizedBox(height: 16),
+                              if (_errorMessage != null) ...[
+                                Text(
+                                  _errorMessage!,
+                                  style: theme.textTheme.labelLarge?.copyWith(
+                                    color: colorScheme.error,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
                                 const SizedBox(height: 12),
-                            itemBuilder: (context, index) {
-                              return _buildGuestCard(_guests[index]);
-                            },
+                              ],
+                              if (_isLoading)
+                                const Padding(
+                                  padding:
+                                      EdgeInsets.symmetric(vertical: 40),
+                                  child: Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                )
+                              else if (_guests.isEmpty)
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 40),
+                                  child: Text(
+                                    'No guest records found.',
+                                    textAlign: TextAlign.center,
+                                    style:
+                                        theme.textTheme.bodyLarge?.copyWith(
+                                      color: colorScheme.onSurface.withValues(
+                                        alpha: 0.72,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              else
+                                ListView.separated(
+                                  itemCount: _guests.length,
+                                  shrinkWrap: true,
+                                  physics:
+                                      const NeverScrollableScrollPhysics(),
+                                  separatorBuilder: (_, __) =>
+                                      const SizedBox(height: 12),
+                                  itemBuilder: (context, index) {
+                                    return _buildGuestCard(_guests[index]);
+                                  },
+                                ),
+                            ],
                           ),
-                      ],
-                    ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

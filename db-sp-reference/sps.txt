@@ -274,3 +274,47 @@ EXCEPTION
         RAISE EXCEPTION 'Something went wrong.';
 END;
 $$;
+
+------------------------------------------------------------------------------------
+
+//status count summary/dashboard
+CREATE OR REPLACE FUNCTION admin_get_dashboard_summary()
+RETURNS TABLE (
+    total_invitations BIGINT,
+    confirmed_invitations BIGINT,
+    declined_invitations BIGINT,
+    for_confirmation_invitations BIGINT,
+
+    total_guests BIGINT,
+    confirmed_guests BIGINT,
+    declined_guests BIGINT,
+    for_confirmation_guests BIGINT
+)
+LANGUAGE sql
+AS $$
+    SELECT
+        -- Invitation counts
+        COUNT(*) AS total_invitations,
+        COUNT(*) FILTER (
+            WHERE confirmation_status = 'Confirmed'
+        ) AS confirmed_invitations,
+        COUNT(*) FILTER (
+            WHERE confirmation_status = 'Declined'
+        ) AS declined_invitations,
+        COUNT(*) FILTER (
+            WHERE confirmation_status = 'ForConfirmation'
+        ) AS for_confirmation_invitations,
+
+        -- Guest counts
+        COALESCE(SUM(guests), 0) AS total_guests,
+        COALESCE(SUM(guests) FILTER (
+            WHERE confirmation_status = 'Confirmed'
+        ), 0) AS confirmed_guests,
+        COALESCE(SUM(guests) FILTER (
+            WHERE confirmation_status = 'Declined'
+        ), 0) AS declined_guests,
+        COALESCE(SUM(guests) FILTER (
+            WHERE confirmation_status = 'ForConfirmation'
+        ), 0) AS for_confirmation_guests
+    FROM invitation_passcodes;
+$$;
