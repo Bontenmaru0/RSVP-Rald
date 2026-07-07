@@ -1,4 +1,4 @@
-﻿import 'dart:ui';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -55,10 +55,7 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
     'Declined',
   ];
 
-  final List<String> _sortDirectionFilters = const [
-    'ASC',
-    'DESC',
-  ];
+  final List<String> _sortDirectionFilters = const ['ASC', 'DESC'];
 
   final List<int> _guestCountFilters = const [1, 2, 3, 4, 5];
 
@@ -176,7 +173,8 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
         return;
       }
       setState(() {
-        _summaryErrorMessage = 'We could not load the dashboard summary right now.';
+        _summaryErrorMessage =
+            'We could not load the dashboard summary right now.';
         _dashboardSummary = null;
       });
     } finally {
@@ -375,6 +373,7 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
         '${hour.toString().padLeft(2, '0')}:'
         '${local.minute.toString().padLeft(2, '0')} $amPm';
   }
+
   Future<void> _updateGuestCount(AdminGuestRecord record, int newCount) async {
     if (newCount == record.guestCount) {
       return;
@@ -413,7 +412,9 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
           guestCount: newCount,
           confirmationStatus: record.confirmationStatus,
           datetimeSentIso8601: record.datetimeSentIso8601,
-          datetimeUpdatedByAdminIso8601: DateTime.now().toUtc().toIso8601String(),
+          datetimeUpdatedByAdminIso8601: DateTime.now()
+              .toUtc()
+              .toIso8601String(),
         ),
       );
     } on AppException catch (error) {
@@ -470,7 +471,9 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
           guestCount: record.guestCount,
           confirmationStatus: newStatus,
           datetimeSentIso8601: record.datetimeSentIso8601,
-          datetimeUpdatedByAdminIso8601: DateTime.now().toUtc().toIso8601String(),
+          datetimeUpdatedByAdminIso8601: DateTime.now()
+              .toUtc()
+              .toIso8601String(),
         ),
       );
     } on AppException catch (error) {
@@ -554,6 +557,53 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
         borderSide: BorderSide(color: colorScheme.primary, width: 1.4),
+      ),
+    );
+  }
+
+  Color _dropdownSurfaceColor() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Color.alphaBlend(
+      Colors.white.withValues(alpha: 0.08),
+      colorScheme.surface,
+    );
+  }
+
+  Color _dropdownMenuColor() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Color.alphaBlend(
+      Colors.white.withValues(alpha: 0.12),
+      colorScheme.surface,
+    );
+  }
+
+  InputDecoration _dropdownDecoration(String hintText) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return InputDecoration(
+      hintText: hintText,
+      hintStyle: TextStyle(
+        color: colorScheme.onSurface.withValues(alpha: 0.68),
+      ),
+      filled: true,
+      fillColor: _dropdownSurfaceColor(),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      isDense: true,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: BorderSide(
+          color: colorScheme.primary.withValues(alpha: 0.24),
+        ),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: BorderSide(
+          color: colorScheme.primary.withValues(alpha: 0.24),
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: BorderSide(color: colorScheme.primary, width: 1.6),
       ),
     );
   }
@@ -677,7 +727,9 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
                       ? Icons.expand_less_rounded
                       : Icons.visibility_rounded,
                 ),
-                label: Text(_showDashboardDetails ? 'Show less' : 'See all data'),
+                label: Text(
+                  _showDashboardDetails ? 'Show less' : 'See all data',
+                ),
               );
 
               if (isCompact) {
@@ -809,10 +861,7 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
     );
   }
 
-  Widget _buildDashboardMetricRow({
-    required String label,
-    required int value,
-  }) {
+  Widget _buildDashboardMetricRow({required String label, required int value}) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     return Container(
@@ -832,7 +881,7 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.labelMedium?.copyWith(
                 color: colorScheme.onSurface.withValues(alpha: 0.72),
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
@@ -871,7 +920,7 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
             label,
             style: theme.textTheme.labelMedium?.copyWith(
               color: colorScheme.onSurface.withValues(alpha: 0.72),
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 6),
@@ -984,7 +1033,7 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
                   'Editing ${record.fullName.isEmpty ? 'guest' : record.fullName}',
                   style: theme.textTheme.labelMedium?.copyWith(
                     color: colorScheme.onSurface.withValues(alpha: 0.74),
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
             ],
@@ -1000,7 +1049,35 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
                           label: 'Guest Count',
                           child: DropdownButtonFormField<int>(
                             initialValue: record.guestCount.clamp(1, 5).toInt(),
-                            decoration: _filterDecoration('Select guest count'),
+                            decoration: _dropdownDecoration(
+                              'Select guest count',
+                            ),
+
+                            dropdownColor: colorScheme.surface.withValues(
+                              alpha: 0.98,
+                            ),
+
+                            borderRadius: BorderRadius.circular(18),
+
+                            icon: Icon(
+                              Icons.keyboard_arrow_down_rounded,
+
+                              color: colorScheme.primary,
+                            ),
+
+                            iconEnabledColor: colorScheme.primary,
+
+                            iconDisabledColor: colorScheme.onSurface.withValues(
+                              alpha: 0.38,
+                            ),
+
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onSurface,
+
+                              fontWeight: FontWeight.w700,
+                            ),
+
+                            menuMaxHeight: 280,
                             items: List<DropdownMenuItem<int>>.generate(
                               5,
                               (index) => DropdownMenuItem<int>(
@@ -1021,9 +1098,35 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
                           label: 'Confirmation Status',
                           child: DropdownButtonFormField<String>(
                             initialValue: status,
-                            decoration: _filterDecoration(
+                            decoration: _dropdownDecoration(
                               'Select confirmation status',
                             ),
+
+                            dropdownColor: colorScheme.surface.withValues(
+                              alpha: 0.98,
+                            ),
+
+                            borderRadius: BorderRadius.circular(18),
+
+                            icon: Icon(
+                              Icons.keyboard_arrow_down_rounded,
+
+                              color: colorScheme.primary,
+                            ),
+
+                            iconEnabledColor: colorScheme.primary,
+
+                            iconDisabledColor: colorScheme.onSurface.withValues(
+                              alpha: 0.38,
+                            ),
+
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onSurface,
+
+                              fontWeight: FontWeight.w700,
+                            ),
+
+                            menuMaxHeight: 280,
                             items: const [
                               DropdownMenuItem(
                                 value: 'ForConfirmation',
@@ -1057,9 +1160,34 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
                               initialValue: record.guestCount
                                   .clamp(1, 5)
                                   .toInt(),
-                              decoration: _filterDecoration(
+                              decoration: _dropdownDecoration(
                                 'Select guest count',
                               ),
+
+                              dropdownColor: colorScheme.surface.withValues(
+                                alpha: 0.98,
+                              ),
+
+                              borderRadius: BorderRadius.circular(18),
+
+                              icon: Icon(
+                                Icons.keyboard_arrow_down_rounded,
+
+                                color: colorScheme.primary,
+                              ),
+
+                              iconEnabledColor: colorScheme.primary,
+
+                              iconDisabledColor: colorScheme.onSurface
+                                  .withValues(alpha: 0.38),
+
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onSurface,
+
+                                fontWeight: FontWeight.w700,
+                              ),
+
+                              menuMaxHeight: 280,
                               items: List<DropdownMenuItem<int>>.generate(
                                 5,
                                 (index) => DropdownMenuItem<int>(
@@ -1082,9 +1210,34 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
                             label: 'Confirmation Status',
                             child: DropdownButtonFormField<String>(
                               initialValue: status,
-                              decoration: _filterDecoration(
+                              decoration: _dropdownDecoration(
                                 'Select confirmation status',
                               ),
+
+                              dropdownColor: colorScheme.surface.withValues(
+                                alpha: 0.98,
+                              ),
+
+                              borderRadius: BorderRadius.circular(18),
+
+                              icon: Icon(
+                                Icons.keyboard_arrow_down_rounded,
+
+                                color: colorScheme.primary,
+                              ),
+
+                              iconEnabledColor: colorScheme.primary,
+
+                              iconDisabledColor: colorScheme.onSurface
+                                  .withValues(alpha: 0.38),
+
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onSurface,
+
+                                fontWeight: FontWeight.w700,
+                              ),
+
+                              menuMaxHeight: 280,
                               items: const [
                                 DropdownMenuItem(
                                   value: 'ForConfirmation',
@@ -1134,7 +1287,7 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
         '$label: $value',
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
           color: colorScheme.onSurface,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
@@ -1260,7 +1413,31 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
                   const SizedBox(height: 8),
                   DropdownButtonFormField<int?>(
                     initialValue: _selectedGuestCountFilter,
-                    decoration: _filterDecoration('Select guest count'),
+                    decoration: _dropdownDecoration('Select guest count'),
+
+                    dropdownColor: _dropdownMenuColor(),
+
+                    borderRadius: BorderRadius.circular(18),
+
+                    icon: Icon(
+                      Icons.keyboard_arrow_down_rounded,
+
+                      color: colorScheme.primary,
+                    ),
+
+                    iconEnabledColor: colorScheme.primary,
+
+                    iconDisabledColor: colorScheme.onSurface.withValues(
+                      alpha: 0.38,
+                    ),
+
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurface,
+
+                      fontWeight: FontWeight.w700,
+                    ),
+
+                    menuMaxHeight: 280,
                     items: [
                       const DropdownMenuItem<int?>(
                         value: null,
@@ -1284,7 +1461,33 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
                     initialValue: _selectedStatusFilter,
-                    decoration: _filterDecoration('Select confirmation status'),
+                    decoration: _dropdownDecoration(
+                      'Select confirmation status',
+                    ),
+
+                    dropdownColor: _dropdownMenuColor(),
+
+                    borderRadius: BorderRadius.circular(18),
+
+                    icon: Icon(
+                      Icons.keyboard_arrow_down_rounded,
+
+                      color: colorScheme.primary,
+                    ),
+
+                    iconEnabledColor: colorScheme.primary,
+
+                    iconDisabledColor: colorScheme.onSurface.withValues(
+                      alpha: 0.38,
+                    ),
+
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurface,
+
+                      fontWeight: FontWeight.w700,
+                    ),
+
+                    menuMaxHeight: 280,
                     items: _statusFilters
                         .map(
                           (status) => DropdownMenuItem<String>(
@@ -1307,7 +1510,31 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
                     initialValue: _selectedSortDirection,
-                    decoration: _filterDecoration('Select sort order'),
+                    decoration: _dropdownDecoration('Select sort order'),
+
+                    dropdownColor: _dropdownMenuColor(),
+
+                    borderRadius: BorderRadius.circular(18),
+
+                    icon: Icon(
+                      Icons.keyboard_arrow_down_rounded,
+
+                      color: colorScheme.primary,
+                    ),
+
+                    iconEnabledColor: colorScheme.primary,
+
+                    iconDisabledColor: colorScheme.onSurface.withValues(
+                      alpha: 0.38,
+                    ),
+
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurface,
+
+                      fontWeight: FontWeight.w700,
+                    ),
+
+                    menuMaxHeight: 280,
                     items: _sortDirectionFilters
                         .map(
                           (direction) => DropdownMenuItem<String>(
@@ -1358,8 +1585,9 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
                 ],
               ),
             ),
-            crossFadeState:
-                _showFilters ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+            crossFadeState: _showFilters
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
             duration: const Duration(milliseconds: 220),
           ),
           const SizedBox(height: 12),
@@ -1508,14 +1736,3 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-
