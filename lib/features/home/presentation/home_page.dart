@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 
@@ -7,6 +7,7 @@ import 'widgets/gallery_modal.dart';
 import 'widgets/gallery_tab.dart';
 import 'widgets/wedding_background.dart';
 import 'widgets/wedding_navigation_rail.dart';
+import 'widgets/wedding_countdown_banner.dart';
 import 'widgets/wedding_overlay.dart';
 
 class HomePage extends StatefulWidget {
@@ -49,6 +50,7 @@ class _HomePageState extends State<HomePage> {
             children: const [
               Positioned.fill(child: WeddingBackground()),
               Positioned.fill(child: WeddingOverlay()),
+              Positioned.fill(child: WeddingCountdownBanner()),
               Positioned.fill(child: GalleryTab()),
               Positioned.fill(child: WeddingNavigationRail()),
             ],
@@ -58,3 +60,5 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
+
+
