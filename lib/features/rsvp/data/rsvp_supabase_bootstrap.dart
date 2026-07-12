@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+// import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/config/supabase_config.dart';
@@ -48,7 +48,7 @@ class RsvpSupabaseBootstrap {
       );
       _isInitialized = true;
       return true;
-    } catch (error, stackTrace) {
+    } catch (error) {//,stackTrace
       // debugPrint('RSVP Supabase initialization failed: $error');
       // debugPrintStack(stackTrace: stackTrace);
       return false;
