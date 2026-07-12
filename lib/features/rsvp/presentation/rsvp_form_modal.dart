@@ -8,6 +8,7 @@ import '../../../core/utils/app_snackbar.dart';
 import '../data/rsvp_repository_factory.dart';
 import '../domain/entities/rsvp_submission.dart';
 import 'rsvp_status_modal.dart';
+import 'widgets/guest_count_picker.dart';
 
 Future<void> showRsvpFormModal(BuildContext context) {
   return showGeneralDialog(
@@ -63,6 +64,7 @@ class _RsvpFormModalState extends State<RsvpFormModal> {
   bool _showPasscode = false;
   bool _showConfirmPasscode = false;
   bool _isSubmitting = false;
+  final GlobalKey _guestCountTriggerKey = GlobalKey();
 
   @override
   void dispose() {
@@ -455,7 +457,21 @@ class _RsvpFormModalState extends State<RsvpFormModal> {
 
     void changeGuests(int delta) {
       setState(() {
-        _guestCount = (_guestCount + delta).clamp(1, 100);
+        _guestCount = (_guestCount + delta).clamp(1, kGuestCountMax);
+      });
+    }
+
+    Future<void> openMenu() async {
+      final selected = await showGuestCountMenu(
+        context: context,
+        anchorKey: _guestCountTriggerKey,
+        initialValue: _guestCount,
+      );
+      if (!mounted || selected == null) {
+        return;
+      }
+      setState(() {
+        _guestCount = selected;
       });
     }
 
@@ -477,39 +493,50 @@ class _RsvpFormModalState extends State<RsvpFormModal> {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '$_guestCount guest${_guestCount == 1 ? '' : 's'}',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface,
-                        fontWeight: FontWeight.w700,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                key: _guestCountTriggerKey,
+                borderRadius: BorderRadius.circular(14),
+                onTap: openMenu,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '$_guestCount guest${_guestCount == 1 ? '' : 's'}',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface,
+                              fontWeight: FontWeight.w700,
+                            ),
                       ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Tap + to add more guests',
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: 0.70),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Tap number to choose from 1 to $kGuestCountMax',
+                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: 0.70),
+                            ),
                       ),
+                    ],
+                  ),
                 ),
-              ],
+              ),
             ),
           ),
           _GuestStepperButton(
             icon: Icons.add_rounded,
-            onPressed: _guestCount < 5 ? () => changeGuests(1) : null,
+            onPressed: _guestCount < kGuestCountMax ? () => changeGuests(1) : null,
             colorScheme: colorScheme,
           ),
         ],
       ),
     );
   }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -756,7 +783,7 @@ class _RsvpFormModalState extends State<RsvpFormModal> {
                                   _buildFieldCard(
                                     label: 'Number of Guests',
                                     errorText: null,
-                                    counterText: '$_guestCount / 5',
+                                    counterText: '$_guestCount / $kGuestCountMax',
                                     child: _buildGuestStepper(context),
                                   ),
                                   const SizedBox(height: 18),

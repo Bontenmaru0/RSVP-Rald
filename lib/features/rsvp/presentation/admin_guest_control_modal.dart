@@ -8,6 +8,7 @@ import '../../../core/utils/app_snackbar.dart';
 import '../data/rsvp_repository_factory.dart';
 import '../domain/entities/admin_guest_record.dart';
 import '../domain/entities/rsvp_dashboard_summary.dart';
+import 'widgets/guest_count_picker.dart';
 
 Future<void> showAdminGuestControlModal(BuildContext context) {
   return showGeneralDialog(
@@ -57,7 +58,10 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
 
   final List<String> _sortDirectionFilters = const ['ASC', 'DESC'];
 
-  final List<int> _guestCountFilters = const [1, 2, 3, 4, 5];
+  final List<int> _guestCountFilters = List<int>.generate(
+    kGuestCountMax,
+    (index) => index + 1,
+  );
 
   String _selectedStatusFilter = 'Any';
   String _selectedSortDirection = 'ASC';
@@ -1074,7 +1078,7 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
                         labeledDropdown(
                           label: 'Guest Count',
                           child: DropdownButtonFormField<int>(
-                            initialValue: record.guestCount.clamp(1, 5).toInt(),
+                            initialValue: record.guestCount.clamp(1, kGuestCountMax).toInt(),
                             decoration: _dropdownDecoration(
                               'Select guest count',
                             ),
@@ -1105,9 +1109,9 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
 
                             menuMaxHeight: 280,
                             selectedItemBuilder: (context) =>
-                                _selectedCountDropdownItems(5),
+                                _selectedCountDropdownItems(kGuestCountMax),
                             items: List<DropdownMenuItem<int>>.generate(
-                              5,
+                              kGuestCountMax,
                               (index) => DropdownMenuItem<int>(
                                 value: index + 1,
                                 child: Text('${index + 1}'),
@@ -1192,7 +1196,7 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
                             label: 'Guest Count',
                             child: DropdownButtonFormField<int>(
                               initialValue: record.guestCount
-                                  .clamp(1, 5)
+                                  .clamp(1, kGuestCountMax)
                                   .toInt(),
                               decoration: _dropdownDecoration(
                                 'Select guest count',
@@ -1223,9 +1227,9 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
 
                               menuMaxHeight: 280,
                               selectedItemBuilder: (context) =>
-                                  _selectedCountDropdownItems(5),
+                                  _selectedCountDropdownItems(kGuestCountMax),
                               items: List<DropdownMenuItem<int>>.generate(
-                                5,
+                                kGuestCountMax,
                                 (index) => DropdownMenuItem<int>(
                                   value: index + 1,
                                   child: Text('${index + 1}'),
@@ -1481,13 +1485,9 @@ class _AdminGuestControlModalState extends State<AdminGuestControlModal> {
 
                     menuMaxHeight: 280,
                     selectedItemBuilder: (context) =>
-                        _selectedTextDropdownItems(const [
+                        _selectedTextDropdownItems([
                           'Any',
-                          '1',
-                          '2',
-                          '3',
-                          '4',
-                          '5',
+                          ..._guestCountFilters.map((count) => '$count'),
                         ]),
                     items: [
                       const DropdownMenuItem<int?>(
